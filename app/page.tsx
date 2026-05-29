@@ -81,9 +81,11 @@ function Hero() {
         <em style={{ fontStyle: "italic", color: "var(--accent)" }}>menos burocracia.</em>
       </h1>
 
-      <p className="text-lg max-w-lg leading-relaxed mb-10 font-light" style={{ color: "var(--ink2)" }}>
-        Briefing técnico, caderno de especificações e proposta comercial gerados por IA em minutos —
-        padronizados, prontos para revisão e uso imediato.
+      <p className="text-lg max-w-lg leading-relaxed mb-3 font-light" style={{ color: "var(--ink2)" }}>
+        Qualifique clientes antes da reunião, gere briefings por ambiente e produza propostas com a sua identidade — em minutos.
+      </p>
+      <p className="text-sm max-w-md mb-9" style={{ color: "var(--ink3)" }}>
+        Feito para arquitetos autônomos e pequenos escritórios que atendem muitos clientes novos.
       </p>
 
       <div className="flex gap-3 flex-wrap justify-center">
@@ -147,27 +149,6 @@ function Stats() {
 
 /* ─── MÓDULOS ────────────────────────────────────────────── */
 
-const MODULES = [
-  {
-    num: "01", icon: "📋", iconBg: "var(--accent-light)",
-    title: "Briefing técnico",
-    desc: "Cliente preenche um formulário intuitivo. A IA transforma as respostas em um briefing padronizado e completo, pronto para o escritório trabalhar.",
-    tag: "A cada cliente novo", tagBg: "var(--accent-light)", tagColor: "var(--accent)",
-  },
-  {
-    num: "02", icon: "📖", iconBg: "var(--gold-light)",
-    title: "Caderno de especificações",
-    desc: "Arquiteto informa ambientes, padrão e restrições. A IA gera um rascunho técnico com materiais, acabamentos e normas ABNT aplicáveis.",
-    tag: "Por projeto · revisão obrigatória", tagBg: "var(--gold-light)", tagColor: "var(--gold)",
-  },
-  {
-    num: "03", icon: "📄", iconBg: "#E8EFF6",
-    title: "Proposta comercial",
-    desc: "Arquiteto informa escopo, etapas e honorários. A IA gera uma proposta profissional formatada, pronta para enviar ao cliente.",
-    tag: "A cada novo contato", tagBg: "#E8EFF6", tagColor: "#1A3A5C",
-  },
-];
-
 function Modules() {
   return (
     <section id="modulos" className="py-20 px-6 max-w-5xl mx-auto">
@@ -177,51 +158,92 @@ function Modules() {
         Cada módulo resolve uma etapa específica do fluxo de projeto — sem duplicidade, sem ferramenta nova pra aprender.
       </p>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        {MODULES.map((m) => (
-          <div
-            key={m.num}
-            className="relative rounded-2xl p-7 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg"
-            style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}
-          >
-            <span className="absolute top-4 right-5 font-serif-display text-5xl leading-none" style={{ color: "var(--border)" }}>
-              {m.num}
-            </span>
-            <div className="w-11 h-11 rounded-[10px] flex items-center justify-center text-xl mb-5" style={{ background: m.iconBg }}>
-              {m.icon}
+      <div className="flex flex-col gap-4">
+
+        {/* 01 — Qualificação (destaque maior, card panorâmico) */}
+        <div
+          className="rounded-2xl p-7 flex items-start gap-7"
+          style={{ background: "var(--ink)", border: "0.5px solid var(--ink)" }}
+        >
+          <div className="rounded-[10px] flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "rgba(255,255,255,0.1)", width: 52, height: 52 }}>
+            👤
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h3 className="text-base font-medium" style={{ color: "#fff" }}>Qualificação de cliente</h3>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full font-medium" style={{ background: "rgba(107,191,128,0.2)", color: "#6BBF80" }}>Novo</span>
             </div>
-            <h3 className="text-base font-medium mb-2" style={{ color: "var(--ink)" }}>{m.title}</h3>
-            <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink2)" }}>{m.desc}</p>
-            <span className="inline-block mt-4 text-[11px] px-2.5 py-0.5 rounded-full" style={{ background: m.tagBg, color: m.tagColor }}>
-              {m.tag}
+            <p className="text-[13px] leading-relaxed mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
+              O cliente responde um formulário curto antes da primeira reunião. A IA gera para o arquiteto: perfil do cliente, pontos de atenção, perguntas sugeridas para a reunião e indicação de aderência ao padrão do escritório.
+            </p>
+            <span className="inline-block text-[11px] px-2.5 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>
+              Antes de cada reunião inicial
             </span>
           </div>
-        ))}
+        </div>
 
-        {/* card largo — painel */}
+        {/* grade 3 colunas — módulos 02, 03, 04 */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {[
+            {
+              num: "02", icon: "📋", iconBg: "var(--accent-light)",
+              title: "Briefing técnico",
+              desc: "Formulário por ambiente com checkboxes e campos específicos por cômodo. A IA gera briefing em formato de checklist, com pontos de atenção e inconsistências detectadas.",
+              tag: "A cada cliente novo", tagBg: "var(--accent-light)", tagColor: "var(--accent)",
+            },
+            {
+              num: "03", icon: "📄", iconBg: "#E8EFF6",
+              title: "Proposta comercial",
+              desc: "Arquiteto informa escopo, honorários e a identidade do escritório. A IA gera uma proposta no tom e vocabulário do arquiteto — não genérica.",
+              tag: "A cada novo contato", tagBg: "#E8EFF6", tagColor: "#1A3A5C",
+            },
+            {
+              num: "04", icon: "📖", iconBg: "var(--gold-light)",
+              title: "Especificações técnicas",
+              desc: "Para projetos que exigem documentação técnica detalhada — sempre com revisão do arquiteto responsável.",
+              tag: "Rascunho · revisão obrigatória", tagBg: "var(--gold-light)", tagColor: "var(--gold)",
+              muted: true,
+            },
+          ].map((m) => (
+            <div
+              key={m.num}
+              className="relative rounded-2xl p-7 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              style={{ background: "var(--surface)", border: "0.5px solid var(--border)", opacity: m.muted ? 0.8 : 1 }}
+            >
+              <span className="absolute top-4 right-5 font-serif-display text-5xl leading-none" style={{ color: "var(--border)" }}>
+                {m.num}
+              </span>
+              <div className="w-11 h-11 rounded-[10px] flex items-center justify-center text-xl mb-5" style={{ background: m.iconBg }}>
+                {m.icon}
+              </div>
+              <h3 className="text-base font-medium mb-2" style={{ color: "var(--ink)" }}>{m.title}</h3>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink2)" }}>{m.desc}</p>
+              <span className="inline-block mt-4 text-[11px] px-2.5 py-0.5 rounded-full" style={{ background: m.tagBg, color: m.tagColor }}>
+                {m.tag}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* 05 — Painel */}
         <div
-          className="md:col-span-3 rounded-2xl p-7 flex items-center gap-7"
+          className="rounded-2xl p-7 flex items-center gap-7"
           style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}
         >
-          <div
-            className="rounded-[10px] flex items-center justify-center text-2xl flex-shrink-0"
-            style={{ background: "#F0EDE6", width: 52, height: 52 }}
-          >
+          <div className="rounded-[10px] flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "#F0EDE6", width: 52, height: 52 }}>
             🗂️
           </div>
           <div>
             <h3 className="text-base font-medium mb-1" style={{ color: "var(--ink)" }}>Painel de projetos e clientes</h3>
             <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink2)" }}>
-              Acompanhe o status de cada projeto — briefing, especificações, proposta enviada, aprovado. Visibilidade completa do pipeline do escritório.
+              Acompanhe o status de cada projeto — qualificação, briefing, proposta enviada, aprovado. Visibilidade do pipeline do escritório.
             </p>
-            <span
-              className="inline-block mt-3 text-[11px] px-2.5 py-0.5 rounded-full"
-              style={{ background: "var(--surface2)", color: "var(--ink3)", border: "0.5px solid var(--border)" }}
-            >
+            <span className="inline-block mt-3 text-[11px] px-2.5 py-0.5 rounded-full" style={{ background: "var(--surface2)", color: "var(--ink3)", border: "0.5px solid var(--border)" }}>
               Disponível nos planos Profissional e Escritório
             </span>
           </div>
         </div>
+
       </div>
     </section>
   );

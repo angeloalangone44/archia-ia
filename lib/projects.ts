@@ -1,11 +1,11 @@
-export type DocumentoTipo = "briefing" | "specs" | "proposta";
+export type DocumentoTipo = "qualificacao" | "briefing" | "specs" | "proposta";
 
 export type Projeto = {
   id: string;
   tipo: DocumentoTipo;
-  nome: string;   // nome do cliente ou do projeto
-  data: string;   // ISO string
-  trecho: string; // primeiros ~150 chars do output
+  nome: string;
+  data: string;
+  trecho: string;
 };
 
 const KEY = "archia_projetos";
@@ -26,8 +26,8 @@ export function saveProject(p: Omit<Projeto, "id" | "data">): Projeto {
     data: new Date().toISOString(),
   };
   const list = getProjects();
-  list.unshift(projeto); // mais recente primeiro
-  localStorage.setItem(KEY, JSON.stringify(list.slice(0, 100))); // cap 100
+  list.unshift(projeto);
+  localStorage.setItem(KEY, JSON.stringify(list.slice(0, 100)));
   return projeto;
 }
 
@@ -52,13 +52,15 @@ export function relativeDate(iso: string): string {
 }
 
 export const TIPO_LABEL: Record<DocumentoTipo, string> = {
-  briefing: "Briefing técnico",
-  specs: "Caderno de specs",
-  proposta: "Proposta comercial",
+  qualificacao: "Qualificação",
+  briefing:     "Briefing técnico",
+  specs:        "Especificações",
+  proposta:     "Proposta comercial",
 };
 
 export const TIPO_STYLE: Record<DocumentoTipo, { bg: string; color: string }> = {
-  briefing: { bg: "#E8EFF6", color: "#1A3A5C" },
-  specs:    { bg: "#FDF3DC", color: "#8B6914" },
-  proposta: { bg: "#EAF2EC", color: "#2D5A3D" },
+  qualificacao: { bg: "#F0EDE6", color: "#6B5A3E" },
+  briefing:     { bg: "#E8EFF6", color: "#1A3A5C" },
+  specs:        { bg: "#FDF3DC", color: "#8B6914" },
+  proposta:     { bg: "#EAF2EC", color: "#2D5A3D" },
 };

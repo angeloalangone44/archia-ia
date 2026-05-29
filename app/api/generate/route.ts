@@ -3,9 +3,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import {
   buildSystemPrompt,
   PROMPTS,
-  type BriefingDados,
-  type SpecsDados,
-  type PropostaDados,
   type DocumentoTipo,
 } from "@/lib/prompts";
 
@@ -13,8 +10,18 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 type RequestBody = {
   tipo: DocumentoTipo;
-  dados: BriefingDados | SpecsDados | PropostaDados;
+  dados: Record<string, unknown>;
   extraContext?: string;
+};
+
+const VALID_TIPOS: DocumentoTipo[] = ["qualificacao", "briefing", "specs", "proposta"];
+
+// briefing por ambiente pode ser longo — tokens extras
+const MAX_TOKENS: Record<DocumentoTipo, number> = {
+  qualificacao: 1500,
+  briefing:     4000,
+  specs:        3000,
+  proposta:     3000,
 };
 
 export async function POST(req: NextRequest) {
@@ -28,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (!["briefing", "specs", "proposta"].includes(tipo)) {
+  if (!VALID_TIPOS.includes(tipo)) {
     return new Response(JSON.stringify({ error: "tipo inválido" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
@@ -46,7 +53,7 @@ export async function POST(req: NextRequest) {
       try {
         const anthropicStream = await client.messages.stream({
           model: "claude-sonnet-4-5",
-          max_tokens: 2000,
+          max_tokens: MAX_TOKENS[tipo],
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt }],
         });

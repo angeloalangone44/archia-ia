@@ -2,7 +2,11 @@
 
 ## O que é
 Assistente de IA para escritórios de arquitetura brasileiros.
-Gera briefing técnico, caderno de especificações e proposta comercial via Claude API.
+Gera documentos de qualificação, briefing técnico por ambiente, proposta comercial personalizada e especificações técnicas via Claude API.
+
+## Público-alvo
+**Arquitetos autônomos e pequenos escritórios (1–3 pessoas) com alto volume de clientes novos.**
+Não é para escritórios médios/grandes. O foco é agilidade na entrada de novos clientes.
 
 ## URLs
 - **Produção:** https://archia-ia.vercel.app
@@ -16,41 +20,51 @@ Gera briefing técnico, caderno de especificações e proposta comercial via Cla
 - Vercel para deploy (conectado ao GitHub — push em master redeploya)
 - GitHub para versionamento
 
+## Módulos em ordem de prioridade
+1. **Qualificação de cliente** (`/app/qualificacao`) — formulário pré-reunião → relatório para o arquiteto
+2. **Briefing técnico** (`/app/briefing`) — wizard 3 passos com seleção e detalhe por ambiente
+3. **Proposta comercial** (`/app/proposta`) — com seção "Identidade do escritório" para personalizar tom
+4. **Especificações técnicas** (`/app/specs`) — rascunho técnico, menos destaque na UI
+5. **Painel de projetos** (`/app`) — localStorage, sem banco de dados ainda
+
 ## Estrutura de arquivos
 ```
 app/
-  page.tsx                  # Landing page (server component)
-  layout.tsx                # Root layout — DM Serif Display + DM Sans
-  globals.css               # Variáveis CSS + Tailwind
-  api/generate/route.ts     # POST /api/generate — streaming server-side
+  page.tsx                    # Landing page (server component)
+  layout.tsx                  # Root layout — DM Serif Display + DM Sans
+  globals.css                 # Variáveis CSS + Tailwind
+  api/generate/route.ts       # POST /api/generate — streaming, max_tokens por tipo
   app/
-    layout.tsx              # Layout /app/* — sidebar
-    page.tsx                # /app — painel de projetos (localStorage)
-    briefing/page.tsx       # Gerador de briefing
-    specs/page.tsx          # Gerador de caderno de especificações
-    proposta/page.tsx       # Gerador de proposta comercial
+    layout.tsx                # Layout /app/* — sidebar
+    page.tsx                  # /app — painel de projetos (localStorage)
+    qualificacao/page.tsx     # Gerador de qualificação (8 campos)
+    briefing/page.tsx         # Briefing multi-step (3 passos + por ambiente)
+    specs/page.tsx            # Especificações técnicas
+    proposta/page.tsx         # Proposta com identidade do escritório
 components/
-  Sidebar.tsx               # Sidebar escura com nav ativa
-  DocumentForm.tsx          # Wrapper de form + Input/Select/Textarea/FormGroup
-  StreamingOutput.tsx       # Display de streaming com cursor + botão copiar
-  ProjectPanel.tsx          # Painel de projetos do localStorage
+  Sidebar.tsx                 # Sidebar escura, 4 módulos + painel
+  DocumentForm.tsx            # Wrapper + Input/Select/Textarea/FormGroup
+  StreamingOutput.tsx         # Display streaming com cursor + copiar
+  ProjectPanel.tsx            # Painel de projetos do localStorage
 lib/
-  prompts.ts                # SYSTEM_BASE + PROMPTS (briefing/specs/proposta)
-  useGenerate.ts            # Hook: fetch /api/generate, lê stream, auto-salva
-  projects.ts               # CRUD localStorage: saveProject/getProjects/deleteProject
+  prompts.ts                  # Types + PROMPTS para os 4 tipos de documento
+  useGenerate.ts              # Hook: fetch /api/generate, lê stream, auto-salva
+  projects.ts                 # CRUD localStorage: saveProject/getProjects/deleteProject
 referencias/
-  archia-piloto.html        # Design de referência do app
-  archia-onepager.html      # Design de referência da landing
+  archia-piloto.html          # Design de referência do app
+  archia-onepager.html        # Design de referência da landing
 ```
 
-## Estado atual (v0.1 — piloto)
-- ✅ Landing page completa e deployada
-- ✅ 3 geradores funcionais com streaming real (Claude API)
-- ✅ Sidebar com navegação ativa
+## Estado atual (v0.2)
+- ✅ Landing page atualizada com qualificação em destaque
+- ✅ Qualificação de cliente (`/app/qualificacao`) — novo
+- ✅ Briefing wizard 3 passos com seleção e detalhes por ambiente — reformulado
+- ✅ Proposta com seção de identidade do escritório (tom, diferenciais, frase) — atualizado
+- ✅ Especificações técnicas mantidas com menor destaque
 - ✅ Painel de projetos em localStorage (auto-salva após geração)
-- ✅ LGPD: dados nunca persistidos no servidor
-- ❌ Autenticação — não implementada (fora de escopo v0.1)
-- ❌ Banco de dados — não implementado (projetos em localStorage)
+- ✅ Sidebar com 4 módulos na ordem de prioridade
+- ❌ Autenticação — não implementada
+- ❌ Banco de dados — projetos em localStorage
 - ❌ Export PDF/Word — não implementado
 - ❌ Pagamento / planos — não implementado
 
@@ -59,6 +73,8 @@ referencias/
 - ANTHROPIC_API_KEY fica SOMENTE em variável de ambiente server-side.
   Nunca exposta no cliente. Chamadas à API sempre via route handler Next.js.
 - Caderno de especificações sempre acompanha aviso de revisão obrigatória.
+- **Nenhum formulário deve ter mais de 3 passos visíveis de uma vez.**
+- Lógica condicional obrigatória no briefing (tipo → ambientes → detalhes).
 
 ## Comandos do projeto
 - Instalar: `npm install`
