@@ -39,7 +39,7 @@ function Nav() {
       <div className="hidden md:flex items-center gap-7">
         <a href="#modulos" className="text-[13px] transition-colors hover:text-[var(--ink)]" style={{ color: "var(--ink2)" }}>Módulos</a>
         <a href="#como-funciona" className="text-[13px] transition-colors hover:text-[var(--ink)]" style={{ color: "var(--ink2)" }}>Como funciona</a>
-        <a href="#precos" className="text-[13px] transition-colors hover:text-[var(--ink)]" style={{ color: "var(--ink2)" }}>Preços</a>
+        <a href="#piloto" className="text-[13px] transition-colors hover:text-[var(--ink)]" style={{ color: "var(--ink2)" }}>Piloto</a>
         <Link
           href="/app"
           className="text-[13px] font-medium text-white rounded-lg px-4 py-2 transition-opacity hover:opacity-90"
@@ -120,7 +120,7 @@ function Hero() {
 
 const STATS = [
   { num: "3–4h",    label: "economizadas por projeto em documentação" },
-  { num: "3",       label: "documentos gerados por IA com 1 formulário" },
+  { num: "4",       label: "módulos disponíveis" },
   { num: "< 5min",  label: "para gerar uma proposta completa" },
   { num: "LGPD",    label: "dados dos clientes não são armazenados" },
 ];
@@ -319,93 +319,32 @@ function HowItWorks() {
   );
 }
 
-/* ─── PREÇOS ─────────────────────────────────────────────── */
-
-const PLANS = [
-  {
-    badge: "Starter", price: "R$197", name: "Para começar",
-    desc: "Arquiteto autônomo ou escritório solo com até 5 projetos ativos.",
-    features: ["Briefing técnico (ilimitado)", "Proposta comercial (ilimitado)", "Painel básico de projetos", "Exportação em texto"],
-    featured: false,
-  },
-  {
-    badge: "⭐ Mais escolhido", price: "R$347", name: "Profissional",
-    desc: "Escritório de 2–4 pessoas com fluxo contínuo de novos projetos.",
-    features: ["Tudo do Starter", "Caderno de especificações", "CRM completo com histórico", "Exportação PDF e Word", "Templates personalizados"],
-    featured: true,
-  },
-  {
-    badge: "Escritório", price: "R$597", name: "Para equipes",
-    desc: "Escritório estruturado que quer padronizar a produção de toda a equipe.",
-    features: ["Tudo do Profissional", "Até 5 usuários", "Identidade visual do escritório", "Suporte prioritário", "Onboarding personalizado"],
-    featured: false,
-  },
-];
+/* ─── PILOTO ─────────────────────────────────────────────── */
 
 function Pricing() {
   return (
     <div style={{ background: "var(--surface)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)" }}>
-      <section id="precos" className="py-20 px-6 max-w-5xl mx-auto">
-        <Tag>Preços</Tag>
-        <SectionH2>Simples. Sem surpresas.</SectionH2>
-        <p className="text-base font-light max-w-md mb-14" style={{ color: "var(--ink2)" }}>
-          Escolha o plano que faz sentido para o tamanho do seu escritório.
+      <section id="piloto" className="py-20 px-6 max-w-5xl mx-auto">
+        <Tag>Acesso antecipado</Tag>
+        <SectionH2>Piloto gratuito.<br />Sem cartão de crédito.</SectionH2>
+        <p className="text-base font-light max-w-xl mb-10" style={{ color: "var(--ink2)" }}>
+          Sem cadastro. Estamos selecionando os primeiros escritórios para testar o archi.ia e moldar o produto junto com quem usa no dia a dia.
         </p>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          {PLANS.map((p) => (
-            <div
-              key={p.name}
-              className="rounded-2xl p-7 flex flex-col"
-              style={
-                p.featured
-                  ? { background: "var(--ink)", border: "0.5px solid var(--ink)" }
-                  : { background: "var(--bg)", border: "0.5px solid var(--border-strong)" }
-              }
-            >
-              <span
-                className="inline-block text-[10px] font-medium px-2.5 py-0.5 rounded-full mb-4 self-start"
-                style={
-                  p.featured
-                    ? { background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.85)" }
-                    : { background: "var(--accent-light)", color: "var(--accent)" }
-                }
-              >
-                {p.badge}
-              </span>
-
-              <div className="font-serif-display text-[38px] tracking-tight leading-none mb-1" style={{ color: p.featured ? "#fff" : "var(--ink)" }}>
-                {p.price}
-              </div>
-              <div className="text-[13px] mb-5" style={{ color: p.featured ? "rgba(255,255,255,0.45)" : "var(--ink3)" }}>por mês</div>
-
-              <h3 className="text-base font-medium mb-1.5" style={{ color: p.featured ? "#fff" : "var(--ink)" }}>{p.name}</h3>
-              <p className="text-xs mb-5 leading-relaxed flex-1" style={{ color: p.featured ? "rgba(255,255,255,0.55)" : "var(--ink2)" }}>
-                {p.desc}
-              </p>
-
-              <ul className="space-y-2.5 mb-6">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-[13px]" style={{ color: p.featured ? "rgba(255,255,255,0.75)" : "var(--ink2)" }}>
-                    <span style={{ color: p.featured ? "#6BBF80" : "var(--accent)", flexShrink: 0 }}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/app"
-                className="block text-center py-2.5 rounded-[9px] text-sm font-medium transition-opacity hover:opacity-85"
-                style={
-                  p.featured
-                    ? { background: "#fff", color: "var(--ink)" }
-                    : { background: "var(--surface)", color: "var(--ink)", border: "0.5px solid var(--border-strong)" }
-                }
-              >
-                Começar agora
-              </Link>
-            </div>
-          ))}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Link
+            href="/app"
+            className="inline-flex items-center gap-2 text-white rounded-[10px] px-7 py-3.5 text-[15px] font-medium transition-all hover:opacity-90 hover:-translate-y-px"
+            style={{ background: "var(--accent)" }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Quero participar do piloto
+          </Link>
+          <p className="flex items-center gap-1.5 text-xs" style={{ color: "var(--ink3)" }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: "#4CAF7D" }} />
+            Acesso imediato · Vagas limitadas
+          </p>
         </div>
       </section>
     </div>
