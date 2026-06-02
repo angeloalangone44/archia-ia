@@ -6,7 +6,24 @@ export type Projeto = {
   nome: string;
   data: string;
   trecho: string;
+  conteudo?: string; // texto completo gerado (adicionado v0.3)
 };
+
+/** Remove símbolos Markdown do texto para exibição em preview */
+export function stripMarkdown(text: string): string {
+  return text
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/^[-*]\s+/gm, "")
+    .replace(/`(.+?)`/g, "$1")
+    .replace(/_(.+?)_/g, "$1")
+    .replace(/\[(.+?)\]\(.+?\)/g, "$1")
+    .replace(/---+/g, "")
+    .replace(/>\s?.+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 const KEY = "archia_projetos";
 

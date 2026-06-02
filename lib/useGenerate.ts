@@ -51,12 +51,13 @@ export function useGenerate() {
         setText((prev) => prev + chunk);
       }
 
-      // Auto-save ao concluir
+      // Auto-save ao concluir (salva o conteúdo completo)
       if (nome && fullText && !fullText.startsWith("[ERRO")) {
         saveProject({
           tipo,
           nome,
-          trecho: fullText.slice(0, 160).replace(/\n+/g, " ").trim(),
+          trecho: fullText.slice(0, 200).replace(/\n+/g, " ").trim(),
+          conteudo: fullText,
         });
       }
     } catch (err) {

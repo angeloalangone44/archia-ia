@@ -15,6 +15,7 @@ export default function PropostaPage() {
   const [f, setF] = useState({
     cliente: "", tipo: "", escopo: "",
     valor: "", pagto: "", prazo: "", validade: "", exclusoes: "", diferencial: "",
+    revisoes: "", responsabilidadesCliente: "",
     // identidade do escritório
     nomeEscritorio: "", tomComunicacao: "", diferenciais: "", fraseApresentacao: "",
     // estrutura personalizada (persiste no localStorage)
@@ -90,7 +91,7 @@ export default function PropostaPage() {
 
           <FormGroup label="Cole uma proposta antiga como modelo (opcional)" full>
             <Textarea
-              placeholder={`Cole aqui o texto de uma proposta sua anterior — do Word, PDF ou e-mail. A IA vai seguir a mesma estrutura, tom e nível de detalhe, substituindo pelos dados deste novo cliente.\n\nEx: "PROPOSTA DE SERVIÇOS DE ARQUITETURA\n\nCliente: [nome anterior]...\n\n1. Apresentação\nO Escritório X atua há 10 anos..."`}
+              placeholder={`Cole o texto de uma proposta anterior ou descreva as seções que você costuma incluir.\n\nExemplo de estrutura:\nApresentação → Escopo → Etapas → Honorários → Aceite\n\nOu cole uma proposta completa — o Word, PDF ou e-mail. A IA segue a mesma estrutura, tom e nível de detalhe.`}
               value={f.estruturaPersonalizada}
               onChange={set("estruturaPersonalizada")}
               style={{ minHeight: 160 }}
@@ -157,10 +158,24 @@ export default function PropostaPage() {
               onChange={set("diferencial")}
             />
           </FormGroup>
+          <FormGroup label="Número de revisões incluídas">
+            <Input
+              placeholder="Ex: até 3 rodadas de alteração por etapa"
+              value={f.revisoes}
+              onChange={set("revisoes")}
+            />
+          </FormGroup>
+          <FormGroup label="Responsabilidades do cliente" full>
+            <Textarea
+              placeholder="Ex: fornecer planta atualizada do imóvel, estar disponível para reuniões de alinhamento, aprovar etapas dentro do prazo"
+              value={f.responsabilidadesCliente}
+              onChange={set("responsabilidadesCliente")}
+            />
+          </FormGroup>
         </FormGrid>
       </DocumentForm>
 
-      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} />
     </div>
   );
 }

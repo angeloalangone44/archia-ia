@@ -1,6 +1,6 @@
 export const SYSTEM_BASE = `Você é um assistente especializado em arquitetura e projetos residenciais e comerciais no Brasil. Tem profundo conhecimento em normas ABNT (NBR 9050, NBR 6118, NBR 15575 e outras relevantes), materiais de construção, acabamentos e práticas do mercado brasileiro.
 
-Seu papel é gerar documentos técnicos precisos, bem estruturados e profissionais para escritórios de arquitetura. Use terminologia técnica correta. Formate os documentos de forma clara, com seções bem definidas usando títulos em MAIÚSCULAS e subseções numeradas. Sempre inclua ressalvas quando necessário. Escreva sempre em português brasileiro.`;
+Seu papel é gerar documentos técnicos precisos, bem estruturados e profissionais para escritórios de arquitetura. Use terminologia técnica correta. Formate os documentos em Markdown com seções bem definidas (## para títulos de seção, ### para subseções, **negrito** para ênfase). Escreva sempre em português brasileiro.`;
 
 /* ── TIPOS ──────────────────────────────────────────────── */
 
@@ -27,8 +27,7 @@ export type BriefingDados = {
   moradores: string;
   pet: string;
   obsGerais: string;
-  ambientesDetalhados: string; // formatado como texto por ambiente
-  // modelo do escritório (opcional — salvo no localStorage)
+  ambientesDetalhados: string;
   modeloBriefing: string;
 };
 
@@ -51,12 +50,13 @@ export type PropostaDados = {
   validade: string;
   exclusoes: string;
   diferencial: string;
+  revisoes: string;
+  responsabilidadesCliente: string;
   // identidade do escritório
   nomeEscritorio: string;
   tomComunicacao: string;
   diferenciais: string;
   fraseApresentacao: string;
-  // estrutura personalizada (opcional — salvo no escritório)
   estruturaPersonalizada: string;
 };
 
@@ -66,73 +66,75 @@ export const PROMPTS: Record<DocumentoTipo, (dados: never) => string> = {
 
   qualificacao: (dados: QualificacaoDados) => `Analise as respostas de pré-qualificação de um potencial cliente de um escritório de arquitetura e gere um RELATÓRIO DE QUALIFICAÇÃO DE CLIENTE para o arquiteto.
 
-O relatório deve conter EXATAMENTE estas seções:
+O relatório deve conter EXATAMENTE estas seções em Markdown:
 
-1. PERFIL DO CLIENTE
-   - Objetivo do projeto (resumido em 2–3 linhas)
-   - Faixa de orçamento informada
-   - Prazo desejado
-   - Cidade / localização
+## 1. PERFIL DO CLIENTE
+- Objetivo do projeto (resumido em 2–3 linhas)
+- Faixa de orçamento informada
+- Prazo desejado
+- Cidade / localização
 
-2. PONTOS DE ATENÇÃO
-   - Liste em bullets os riscos ou inconsistências detectados
-   - Exemplos: orçamento incompatível com metragem e padrão estimado, prazo irreal, escopo mal definido
-   - Se não houver pontos críticos, diga explicitamente "Nenhum ponto crítico identificado"
+## 2. PONTOS DE ATENÇÃO
+- Liste em bullets os riscos ou inconsistências detectados
+- Exemplos: orçamento incompatível com metragem e padrão estimado, prazo irreal, escopo mal definido
+- Se não houver pontos críticos, escreva: **Nenhum ponto crítico identificado**
 
-3. PERGUNTAS SUGERIDAS PARA A REUNIÃO INICIAL
-   - Liste 5 a 7 perguntas específicas para aprofundar o entendimento
-   - Baseie-se nas lacunas e ambiguidades das respostas
+## 3. PERGUNTAS SUGERIDAS PARA A REUNIÃO INICIAL
+- Liste 5 a 7 perguntas específicas para aprofundar o entendimento
+- Baseie-se nas lacunas e ambiguidades das respostas
 
-4. ADERÊNCIA AO PERFIL DO ESCRITÓRIO
-   - Indique: ALTA / MÉDIA / BAIXA aderência
-   - Justifique em 2–3 linhas com base nas informações fornecidas
+## 4. ADERÊNCIA AO PERFIL DO ESCRITÓRIO
+- Indique: **ALTA / MÉDIA / BAIXA** aderência
+- Justifique em 2–3 linhas com base nas informações fornecidas
 
-RESPOSTAS DO FORMULÁRIO DE QUALIFICAÇÃO:
-Nome do cliente: ${dados.nome}
-Tipo de projeto: ${dados.tipoProjetoQual}
-Metragem estimada: ${dados.metragem}
-Faixa de orçamento: ${dados.orcamentoFaixa}
-Prazo desejado: ${dados.prazo}
-Cidade / bairro: ${dados.cidade}
-Como conheceu o arquiteto: ${dados.comoConheceu}
-Descrição do projeto (palavras do cliente): "${dados.descricao}"
+RESPOSTAS DO FORMULÁRIO:
+Nome: ${dados.nome}
+Tipo: ${dados.tipoProjetoQual}
+Metragem: ${dados.metragem}
+Orçamento: ${dados.orcamentoFaixa}
+Prazo: ${dados.prazo}
+Cidade: ${dados.cidade}
+Como conheceu: ${dados.comoConheceu}
+Descrição: "${dados.descricao}"
 
-Use linguagem objetiva e profissional. O relatório é para uso interno do arquiteto — seja direto e útil.`,
+Use linguagem objetiva e profissional. O relatório é para uso interno do arquiteto.`,
 
   briefing: (dados: BriefingDados) => {
     const formatoInstrucao = dados.modeloBriefing
-      ? `MODELO DE BRIEFING DO ESCRITÓRIO — use como referência de estrutura, formato e tom. Reproduza o mesmo padrão de apresentação, substituindo pelos dados deste novo projeto. Não adicione seções que não existem no modelo:\n\n---\n${dados.modeloBriefing}\n---`
-      : `FORMATO OBRIGATÓRIO DE OUTPUT:
-- Use títulos em MAIÚSCULAS para cada ambiente
-- Use bullet points (•) para cada item — NÃO use texto corrido
-- Use ✓ para itens confirmados e ⚠ para pontos que exigem atenção
-- Ao final, inclua seção "PONTOS DE ATENÇÃO" com inconsistências detectadas (ex: estilo clean selecionado mas com itens rústicos, orçamento incompatível com metragem)
-- Se não houver inconsistências, liste as próximas etapas recomendadas`;
+      ? `MODELO DE BRIEFING DO ESCRITÓRIO — use como referência de estrutura, formato e tom. Reproduza o mesmo padrão substituindo pelos dados deste projeto:\n\n---\n${dados.modeloBriefing}\n---`
+      : `## REGRAS DO OUTPUT:
+- Use ## para cada ambiente (ex: ## SALA DE ESTAR)
+- Use listas com "-" para cada item dentro do ambiente
+- Use **negrito** para decisões confirmadas, sem marcação ⚠ para itens que foram preenchidos
+- Use ⚠ APENAS para inconsistências reais detectadas (ex: estilo clean escolhido mas itens rústicos selecionados) ou informações AUSENTES que impactam o projeto
+- Ao final, inclua ## PONTOS DE ATENÇÃO apenas se houver inconsistências genuínas. Se não houver, inclua ## PRÓXIMAS ETAPAS com recomendações
+- NÃO gere itens "⚠ Definir..." para campos que foram preenchidos — use as informações fornecidas diretamente
+- Inclua TODOS os dados específicos preenchidos (tipo de cuba, material de bancada, tipo de torneira, etc.) — não generalize`;
 
-    return `Gere um BRIEFING TÉCNICO DE PROJETO por ambiente, em formato de checklist consolidada.
+    return `Gere um BRIEFING TÉCNICO DE PROJETO por ambiente, em formato de checklist de decisões confirmadas.
 
 ${formatoInstrucao}
 
-INFORMAÇÕES GERAIS DO PROJETO:
-Tipo: ${dados.tipoDetalhado}
-Cliente: ${dados.cliente}
-Localização: ${dados.local}
-Área estimada: ${dados.area}
-Orçamento: ${dados.orcamento}
-Prazo: ${dados.prazo}
-Moradores: ${dados.moradores}
-Pet: ${dados.pet}
-Observações gerais: ${dados.obsGerais}
+## INFORMAÇÕES GERAIS
+- **Tipo:** ${dados.tipoDetalhado}
+- **Cliente:** ${dados.cliente}
+- **Localização:** ${dados.local}
+- **Área estimada:** ${dados.area}
+- **Orçamento:** ${dados.orcamento}
+- **Prazo:** ${dados.prazo}
+- **Moradores:** ${dados.moradores}
+- **Pet:** ${dados.pet}
+- **Observações gerais:** ${dados.obsGerais}
 
-DETALHES POR AMBIENTE:
+## DETALHES POR AMBIENTE:
 ${dados.ambientesDetalhados}
 
-Gere o briefing por ambiente na ordem em que foram fornecidos. Seja específico e objetivo.`;
+Gere o briefing por ambiente na ordem fornecida. Trate cada dado preenchido como decisão confirmada do cliente, não como pendência.`;
   },
 
   specs: (dados: SpecsDados) => `Gere um CADERNO DE ESPECIFICAÇÕES TÉCNICAS (rascunho) para o projeto abaixo.
 
-Para cada ambiente listado, especifique:
+Para cada ambiente listado, especifique em Markdown:
 - Piso (material, espessura, acabamento, norma aplicável)
 - Parede (revestimento, tinta, altura do revestimento se houver)
 - Teto (forro, pintura, altura)
@@ -141,56 +143,86 @@ Para cada ambiente listado, especifique:
 - Iluminação (tipo recomendado)
 - Observações técnicas e normas relevantes
 
-Inclua ao final uma seção de MATERIAIS GERAIS e NORMAS ABNT APLICÁVEIS ao projeto.
+Inclua ao final ## MATERIAIS GERAIS e ## NORMAS ABNT APLICÁVEIS.
 
-DADOS DO PROJETO:
-Nome do projeto: ${dados.projeto}
-Padrão: ${dados.padrao}
-Tipo de obra: ${dados.tipo}
-Ambientes: ${dados.ambientes}
-Preferências de materiais: ${dados.materiais}
-Restrições / condicionantes: ${dados.normas}
+## DADOS DO PROJETO
+- **Nome:** ${dados.projeto}
+- **Padrão:** ${dados.padrao}
+- **Tipo de obra:** ${dados.tipo}
+- **Ambientes:** ${dados.ambientes}
+- **Preferências de materiais:** ${dados.materiais}
+- **Restrições:** ${dados.normas}
 
-IMPORTANTE: Ao final, inclua ressalva clara de que este é um rascunho técnico e deve ser revisado pelo arquiteto responsável antes de uso em projeto.`,
+> ⚠ **AVISO:** Este é um rascunho técnico gerado por IA. Deve ser revisado e validado pelo arquiteto responsável antes de qualquer uso em projeto.`,
 
   proposta: (dados: PropostaDados) => {
     const temIdentidade = dados.nomeEscritorio || dados.diferenciais || dados.fraseApresentacao;
+
     const identidadeBlock = temIdentidade ? `
-IDENTIDADE DO ESCRITÓRIO (use para personalizar o tom e a apresentação):
-Nome do escritório: ${dados.nomeEscritorio || "não informado"}
-Tom de comunicação: ${dados.tomComunicacao || "profissional"}
-Diferenciais: ${dados.diferenciais || "não informado"}
-Frase de apresentação: ${dados.fraseApresentacao || "não informada"}
+## IDENTIDADE DO ESCRITÓRIO — use OBRIGATORIAMENTE para personalizar abertura, tom e argumentação:
+- **Nome:** ${dados.nomeEscritorio || "não informado"}
+- **Tom de comunicação:** ${dados.tomComunicacao || "profissional"}
+- **Diferenciais:** ${dados.diferenciais || "não informado"}
+- **Frase de apresentação:** ${dados.fraseApresentacao || "não informada"}
+
+ATENÇÃO: A abertura da proposta DEVE mencionar o nome do escritório e seus diferenciais. Não use texto genérico como "nosso escritório" sem nome — use o nome real fornecido.
 ` : "";
 
-    const instrucaoTom = dados.tomComunicacao === "próximo e pessoal"
-      ? "INSTRUÇÃO DE TOM: escreva de forma calorosa, próxima e pessoal — como se o arquiteto estivesse conversando diretamente com o cliente. Use 'você', evite jargões excessivos."
-      : dados.tomComunicacao === "moderno e direto"
-      ? "INSTRUÇÃO DE TOM: escreva de forma moderna, objetiva e direta. Frases curtas, linguagem contemporânea, sem formalidade excessiva."
-      : "INSTRUÇÃO DE TOM: escreva de forma formal, técnica e profissional. Use linguagem adequada para contratos e documentos formais.";
+    const instrucaoTom = dados.tomComunicacao?.toLowerCase().includes("próximo")
+      ? `## TOM OBRIGATÓRIO — PRÓXIMO E PESSOAL:
+Escreva como se o arquiteto estivesse conversando diretamente com o cliente. Use "você", linguagem calorosa e pessoal. Evite jargões técnicos desnecessários. A proposta deve soar como uma conversa de alguém que já conhece o cliente, não como um contrato frio.`
+      : dados.tomComunicacao?.toLowerCase().includes("moderno")
+      ? `## TOM OBRIGATÓRIO — MODERNO E DIRETO:
+Frases curtas e objetivas. Linguagem contemporânea, sem formalidade excessiva. Vai direto ao ponto. Sem floreios ou enrolação.`
+      : `## TOM OBRIGATÓRIO — FORMAL E TÉCNICO:
+Linguagem formal e profissional. Terminologia técnica adequada. Tom de documento de contrato. Preciso e objetivo.`;
+
+    const camposExtras = [
+      dados.revisoes && `- **Revisões incluídas:** ${dados.revisoes}`,
+      dados.responsabilidadesCliente && `- **Responsabilidades do cliente:** ${dados.responsabilidadesCliente}`,
+    ].filter(Boolean).join("\n");
 
     const estruturaSecoes = dados.estruturaPersonalizada
-      ? `\nMODELO DE PROPOSTA DO ESCRITÓRIO — use como referência de estrutura, tom, estilo e nível de detalhe. Substitua os dados de referência pelos dados reais do cliente fornecidos abaixo, mantendo a organização e voz do modelo original. Não invente seções que não existem no modelo:\n\n---\n${dados.estruturaPersonalizada}\n---\n`
-      : `\nO documento deve conter:\n1. APRESENTAÇÃO DO ESCRITÓRIO (personalizada com os dados de identidade acima)\n2. OBJETO DA PROPOSTA\n3. ESCOPO DETALHADO DE SERVIÇOS (com etapas bem definidas)\n4. EXCLUSÕES DE ESCOPO\n5. CRONOGRAMA ESTIMADO\n6. HONORÁRIOS E CONDIÇÕES DE PAGAMENTO\n7. VALIDADE DA PROPOSTA\n8. CONDIÇÕES GERAIS (responsabilidades, alterações de escopo, direitos autorais)\n9. ACEITE (espaço para assinatura)\n`;
+      ? `## MODELO DO ESCRITÓRIO — siga esta estrutura, substituindo pelos dados reais do cliente:
+
+---
+${dados.estruturaPersonalizada}
+---`
+      : `## ESTRUTURA OBRIGATÓRIA DO DOCUMENTO:
+1. **APRESENTAÇÃO DO ESCRITÓRIO** — personalizada com nome, diferenciais e frase de apresentação
+2. **OBJETO DA PROPOSTA**
+3. **ESCOPO DETALHADO DE SERVIÇOS** — com etapas bem definidas
+4. **EXCLUSÕES DE ESCOPO**
+5. **CRONOGRAMA ESTIMADO**
+6. **HONORÁRIOS E CONDIÇÕES DE PAGAMENTO**
+7. **REVISÕES INCLUÍDAS** — número de rodadas por etapa
+8. **RESPONSABILIDADES DO CLIENTE** — o que o cliente deve fornecer e cumprir
+9. **VALIDADE DA PROPOSTA**
+10. **CONDIÇÕES GERAIS** — alterações de escopo, direitos autorais, rescisão
+11. **ACEITE** — espaço para assinatura`;
 
     return `Gere uma PROPOSTA COMERCIAL DE SERVIÇOS DE ARQUITETURA completa, profissional e pronta para envio ao cliente.
 
 ${instrucaoTom}
 
-A proposta deve soar como se o próprio arquiteto tivesse escrito — não genérica, não de escritório fictício. Use as informações de identidade para personalizar apresentação, tom e argumentação de valor.
+A proposta deve soar como se o próprio arquiteto tivesse escrito — não genérica. Use as informações de identidade para personalizar.
+
 ${identidadeBlock}
 ${estruturaSecoes}
 
-DADOS FORNECIDOS:
-Cliente: ${dados.cliente}
-Tipo de projeto: ${dados.tipo}
-Escopo: ${dados.escopo}
-Honorários totais: ${dados.valor}
-Forma de pagamento: ${dados.pagto}
-Prazo do projeto: ${dados.prazo}
-Validade da proposta: ${dados.validade}
-Exclusões: ${dados.exclusoes}
-Diferencial informado: ${dados.diferencial}`;
+## DADOS DA PROPOSTA:
+- **Cliente:** ${dados.cliente}
+- **Tipo de projeto:** ${dados.tipo}
+- **Escopo:** ${dados.escopo}
+- **Honorários totais:** ${dados.valor}
+- **Forma de pagamento:** ${dados.pagto}
+- **Prazo do projeto:** ${dados.prazo}
+- **Validade da proposta:** ${dados.validade}
+- **Exclusões de escopo:** ${dados.exclusoes}
+- **Diferencial / argumento de valor:** ${dados.diferencial}
+${camposExtras}
+
+Formate em Markdown. Use ## para seções principais, ### para subseções, listas com "-" para items, **negrito** para termos importantes.`;
   },
 };
 
