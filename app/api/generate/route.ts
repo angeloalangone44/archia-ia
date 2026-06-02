@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import {
   buildSystemPrompt,
@@ -24,9 +24,20 @@ const MAX_TOKENS: Record<DocumentoTipo, number> = {
   proposta:     3000,
 };
 
+/** Remove BOM (U+FEFF) de todos os valores string — evita ByteString error no Edge runtime */
+function stripBom(dados: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(dados).map(([k, v]) => [
+      k,
+      typeof v === "string" ? v.replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "") : v,
+    ])
+  );
+}
+
 export async function POST(req: NextRequest) {
   const body: RequestBody = await req.json();
-  const { tipo, dados, extraContext } = body;
+  const { tipo, dados: rawDados, extraContext } = body;
+  const dados = stripBom(rawDados);
 
   if (!tipo || !dados) {
     return new Response(JSON.stringify({ error: "tipo e dados são obrigatórios" }), {
@@ -83,3 +94,4 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+

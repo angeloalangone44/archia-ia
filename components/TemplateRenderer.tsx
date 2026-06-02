@@ -25,7 +25,7 @@ function sanitize(text: string): string {
   // Remove BOM (U+FEFF, decimal 65279) e qualquer char acima do Latin-1
   // Evita "Cannot convert argument to a BytString" no window.print() / clipboard
   return text
-    .replace(/﻿/g, "")       // eslint-disable-line no-control-regex
+    .replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "")       // eslint-disable-line no-control-regex
     .replace(/[^\x00-\xFF]/g, "");
 }
 
@@ -483,4 +483,5 @@ export default function TemplateRenderer({ text, isStreaming, visible }: Props) 
     </>
   );
 }
+
 

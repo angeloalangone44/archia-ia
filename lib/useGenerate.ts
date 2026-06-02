@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import type { DocumentoTipo } from "./prompts";
@@ -21,11 +21,16 @@ export function useGenerate() {
 
     let fullText = "";
 
+    // Strip BOM de todos os valores antes de enviar — evita ByteString error
+    const cleanDados = Object.fromEntries(
+      Object.entries(dados).map(([k, v]) => [k, v.replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "")])
+    );
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo, dados }),
+        body: JSON.stringify({ tipo, dados: cleanDados }),
       });
 
       if (!res.ok || !res.body) {
@@ -41,7 +46,7 @@ export function useGenerate() {
         const { done, value } = await reader.read();
         if (done) break;
         // Strip BOM (U+FEFF) que pode vir no início do stream
-        const chunk = decoder.decode(value, { stream: true }).replace(/﻿/g, "");
+        const chunk = decoder.decode(value, { stream: true }).replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "");
         fullText += chunk;
         setText((prev) => prev + chunk);
       }
@@ -63,3 +68,4 @@ export function useGenerate() {
 
   return { text, isLoading, visible, generate };
 }
+
