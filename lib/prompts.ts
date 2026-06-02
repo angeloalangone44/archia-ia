@@ -162,7 +162,7 @@ Frase de apresentação: ${dados.fraseApresentacao || "não informada"}
       : "INSTRUÇÃO DE TOM: escreva de forma formal, técnica e profissional. Use linguagem adequada para contratos e documentos formais.";
 
     const estruturaSecoes = dados.estruturaPersonalizada
-      ? `\nSIGA ESTA ESTRUTURA (definida pelo escritório — não altere a ordem nem adicione seções):\n${dados.estruturaPersonalizada}\n`
+      ? `\nMODELO DE PROPOSTA DO ESCRITÓRIO — use como referência de estrutura, tom, estilo e nível de detalhe. Substitua os dados de referência pelos dados reais do cliente fornecidos abaixo, mantendo a organização e voz do modelo original. Não invente seções que não existem no modelo:\n\n---\n${dados.estruturaPersonalizada}\n---\n`
       : `\nO documento deve conter:\n1. APRESENTAÇÃO DO ESCRITÓRIO (personalizada com os dados de identidade acima)\n2. OBJETO DA PROPOSTA\n3. ESCOPO DETALHADO DE SERVIÇOS (com etapas bem definidas)\n4. EXCLUSÕES DE ESCOPO\n5. CRONOGRAMA ESTIMADO\n6. HONORÁRIOS E CONDIÇÕES DE PAGAMENTO\n7. VALIDADE DA PROPOSTA\n8. CONDIÇÕES GERAIS (responsabilidades, alterações de escopo, direitos autorais)\n9. ACEITE (espaço para assinatura)\n`;
 
     return `Gere uma PROPOSTA COMERCIAL DE SERVIÇOS DE ARQUITETURA completa, profissional e pronta para envio ao cliente.

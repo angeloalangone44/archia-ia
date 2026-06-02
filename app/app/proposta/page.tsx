@@ -85,22 +85,22 @@ export default function PropostaPage() {
             />
           </FormGroup>
 
-          {/* ── Estrutura da proposta ────────────────────────── */}
-          <SectionDivider>Estrutura da proposta</SectionDivider>
+          {/* ── Modelo de proposta ───────────────────────────── */}
+          <SectionDivider>Modelo de proposta do escritório</SectionDivider>
 
-          <FormGroup label="Estrutura padrão do escritório (opcional)" full>
+          <FormGroup label="Cole uma proposta antiga como modelo (opcional)" full>
             <Textarea
-              placeholder={`Cole aqui as seções da sua proposta padrão. Ex:\n1. Apresentação do escritório\n2. Escopo de serviços\n3. Etapas e cronograma\n4. Honorários e forma de pagamento\n5. Exclusões\n6. Aceite`}
+              placeholder={`Cole aqui o texto de uma proposta sua anterior — do Word, PDF ou e-mail. A IA vai seguir a mesma estrutura, tom e nível de detalhe, substituindo pelos dados deste novo cliente.\n\nEx: "PROPOSTA DE SERVIÇOS DE ARQUITETURA\n\nCliente: [nome anterior]...\n\n1. Apresentação\nO Escritório X atua há 10 anos..."`}
               value={f.estruturaPersonalizada}
               onChange={set("estruturaPersonalizada")}
-              style={{ minHeight: 110 }}
+              style={{ minHeight: 160 }}
             />
             <p className="text-[11px] mt-1.5 flex items-center gap-1" style={{ color: "var(--ink3)" }}>
               <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3 flex-shrink-0" style={{ color: "var(--accent)" }}>
                 <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
-              Salvo automaticamente — a IA usará esta estrutura em vez da padrão
+              Salvo automaticamente — use uma vez, serve para todas as propostas futuras
             </p>
           </FormGroup>
 
