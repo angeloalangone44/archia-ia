@@ -1,6 +1,6 @@
 "use client";
 
-import StreamingOutput from "@/components/StreamingOutput";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
 import { useState } from "react";
 import { Input, Select, Textarea, FormGroup } from "@/components/DocumentForm";
@@ -544,7 +544,7 @@ export default function BriefingPage() {
         </div>
       )}
 
-      <StreamingOutput text={text} isStreaming={isLoading} visible={visible} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
     </div>
   );
 }

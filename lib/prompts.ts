@@ -54,6 +54,8 @@ export type PropostaDados = {
   tomComunicacao: string;
   diferenciais: string;
   fraseApresentacao: string;
+  // estrutura personalizada (opcional — salvo no escritório)
+  estruturaPersonalizada: string;
 };
 
 /* ── PROMPTS ────────────────────────────────────────────── */
@@ -159,22 +161,17 @@ Frase de apresentação: ${dados.fraseApresentacao || "não informada"}
       ? "INSTRUÇÃO DE TOM: escreva de forma moderna, objetiva e direta. Frases curtas, linguagem contemporânea, sem formalidade excessiva."
       : "INSTRUÇÃO DE TOM: escreva de forma formal, técnica e profissional. Use linguagem adequada para contratos e documentos formais.";
 
+    const estruturaSecoes = dados.estruturaPersonalizada
+      ? `\nSIGA ESTA ESTRUTURA (definida pelo escritório — não altere a ordem nem adicione seções):\n${dados.estruturaPersonalizada}\n`
+      : `\nO documento deve conter:\n1. APRESENTAÇÃO DO ESCRITÓRIO (personalizada com os dados de identidade acima)\n2. OBJETO DA PROPOSTA\n3. ESCOPO DETALHADO DE SERVIÇOS (com etapas bem definidas)\n4. EXCLUSÕES DE ESCOPO\n5. CRONOGRAMA ESTIMADO\n6. HONORÁRIOS E CONDIÇÕES DE PAGAMENTO\n7. VALIDADE DA PROPOSTA\n8. CONDIÇÕES GERAIS (responsabilidades, alterações de escopo, direitos autorais)\n9. ACEITE (espaço para assinatura)\n`;
+
     return `Gere uma PROPOSTA COMERCIAL DE SERVIÇOS DE ARQUITETURA completa, profissional e pronta para envio ao cliente.
 
 ${instrucaoTom}
 
 A proposta deve soar como se o próprio arquiteto tivesse escrito — não genérica, não de escritório fictício. Use as informações de identidade para personalizar apresentação, tom e argumentação de valor.
 ${identidadeBlock}
-O documento deve conter:
-1. APRESENTAÇÃO DO ESCRITÓRIO (personalizada com os dados de identidade acima)
-2. OBJETO DA PROPOSTA
-3. ESCOPO DETALHADO DE SERVIÇOS (com etapas bem definidas)
-4. EXCLUSÕES DE ESCOPO
-5. CRONOGRAMA ESTIMADO
-6. HONORÁRIOS E CONDIÇÕES DE PAGAMENTO
-7. VALIDADE DA PROPOSTA
-8. CONDIÇÕES GERAIS (responsabilidades, alterações de escopo, direitos autorais)
-9. ACEITE (espaço para assinatura)
+${estruturaSecoes}
 
 DADOS FORNECIDOS:
 Cliente: ${dados.cliente}

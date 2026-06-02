@@ -3,9 +3,11 @@
 import DocumentForm, {
   FormGrid, FormGroup, Input, Select, Textarea, SectionDivider,
 } from "@/components/DocumentForm";
-import StreamingOutput from "@/components/StreamingOutput";
+import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const STORAGE_KEY = "archia-estrutura-proposta";
 
 export default function PropostaPage() {
   const { text, isLoading, visible, generate } = useGenerate();
@@ -15,7 +17,20 @@ export default function PropostaPage() {
     valor: "", pagto: "", prazo: "", validade: "", exclusoes: "", diferencial: "",
     // identidade do escritório
     nomeEscritorio: "", tomComunicacao: "", diferenciais: "", fraseApresentacao: "",
+    // estrutura personalizada (persiste no localStorage)
+    estruturaPersonalizada: "",
   });
+
+  // Carrega estrutura salva ao montar
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) setF((prev) => ({ ...prev, estruturaPersonalizada: saved }));
+  }, []);
+
+  // Persiste estrutura no localStorage quando muda
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, f.estruturaPersonalizada);
+  }, [f.estruturaPersonalizada]);
 
   const set = (k: keyof typeof f) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -40,7 +55,7 @@ export default function PropostaPage() {
 
       <DocumentForm onSubmit={handleSubmit} isLoading={isLoading} buttonLabel="Gerar proposta comercial">
         <FormGrid>
-          {/* identidade primeiro — define o tom antes de tudo */}
+          {/* ── Identidade do escritório ─────────────────────── */}
           <SectionDivider>Identidade do escritório</SectionDivider>
 
           <FormGroup label="Nome do escritório">
@@ -70,6 +85,26 @@ export default function PropostaPage() {
             />
           </FormGroup>
 
+          {/* ── Estrutura da proposta ────────────────────────── */}
+          <SectionDivider>Estrutura da proposta</SectionDivider>
+
+          <FormGroup label="Estrutura padrão do escritório (opcional)" full>
+            <Textarea
+              placeholder={`Cole aqui as seções da sua proposta padrão. Ex:\n1. Apresentação do escritório\n2. Escopo de serviços\n3. Etapas e cronograma\n4. Honorários e forma de pagamento\n5. Exclusões\n6. Aceite`}
+              value={f.estruturaPersonalizada}
+              onChange={set("estruturaPersonalizada")}
+              style={{ minHeight: 110 }}
+            />
+            <p className="text-[11px] mt-1.5 flex items-center gap-1" style={{ color: "var(--ink3)" }}>
+              <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3 flex-shrink-0" style={{ color: "var(--accent)" }}>
+                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Salvo automaticamente — a IA usará esta estrutura em vez da padrão
+            </p>
+          </FormGroup>
+
+          {/* ── Dados da proposta ─────────────────────────────── */}
           <SectionDivider>Dados da proposta</SectionDivider>
 
           <FormGroup label="Nome do cliente" required>
@@ -93,6 +128,7 @@ export default function PropostaPage() {
             />
           </FormGroup>
 
+          {/* ── Honorários ───────────────────────────────────── */}
           <SectionDivider>Honorários</SectionDivider>
 
           <FormGroup label="Valor total dos honorários (R$)" required>
@@ -124,7 +160,7 @@ export default function PropostaPage() {
         </FormGrid>
       </DocumentForm>
 
-      <StreamingOutput text={text} isStreaming={isLoading} visible={visible} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
     </div>
   );
 }
