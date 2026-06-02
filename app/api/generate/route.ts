@@ -1,4 +1,4 @@
-﻿import { NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import {
   buildSystemPrompt,
@@ -6,7 +6,12 @@ import {
   type DocumentoTipo,
 } from "@/lib/prompts";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const BOM_RE = new RegExp(String.fromCharCode(0xFEFF), "g");
+
+// Strip BOM da API key por precaução (chave copiada com BOM causa erro de auth)
+const client = new Anthropic({
+  apiKey: (process.env.ANTHROPIC_API_KEY ?? "").replace(BOM_RE, ""),
+});
 
 type RequestBody = {
   tipo: DocumentoTipo;
@@ -54,8 +59,9 @@ export async function POST(req: NextRequest) {
   }
 
   const promptFn = PROMPTS[tipo] as (d: never) => string;
-  const userPrompt = promptFn(dados as never);
-  const systemPrompt = buildSystemPrompt(extraContext);
+  // Strip BOM do prompt final — garante que nenhum BOM residual vai para a API
+  const userPrompt = promptFn(dados as never).replace(BOM_RE, "");
+  const systemPrompt = buildSystemPrompt(extraContext).replace(BOM_RE, "");
 
   const stream = new ReadableStream({
     async start(controller) {

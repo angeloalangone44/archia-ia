@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -22,11 +22,9 @@ type Segment =
 // Evita "Cannot convert argument to a BytString" no print/clipboard
 
 function sanitize(text: string): string {
-  // Remove BOM (U+FEFF, decimal 65279) e qualquer char acima do Latin-1
-  // Evita "Cannot convert argument to a BytString" no window.print() / clipboard
-  return text
-    .replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "")       // eslint-disable-line no-control-regex
-    .replace(/[^\x00-\xFF]/g, "");
+  // Remove apenas BOM (U+FEFF = 65279) — não remove chars acima de 255
+  // Bullets (•), em-dashes (—) e aspas curvas são conteúdo válido gerado pela IA
+  return text.replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "");
 }
 
 // ── Text parser ───────────────────────────────────────────────
