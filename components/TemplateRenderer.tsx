@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -17,6 +17,17 @@ type Segment =
   | { type: "h2"; text: string }
   | { type: "bullet"; text: string; symbol: string }
   | { type: "paragraph"; text: string };
+
+// ── Sanitização — remove BOM e chars fora do Latin-1 ─────────
+// Evita "Cannot convert argument to a BytString" no print/clipboard
+
+function sanitize(text: string): string {
+  // Remove BOM (U+FEFF, decimal 65279) e qualquer char acima do Latin-1
+  // Evita "Cannot convert argument to a BytString" no window.print() / clipboard
+  return text
+    .replace(/﻿/g, "")       // eslint-disable-line no-control-regex
+    .replace(/[^\x00-\xFF]/g, "");
+}
 
 // ── Text parser ───────────────────────────────────────────────
 
@@ -192,7 +203,7 @@ function SegmentRenderer({ seg, tpl }: { seg: Segment; tpl: TemplateId }) {
 // ── Template overlay (full-screen preview + print) ────────────
 
 function TemplateOverlay({ text, tpl, onClose }: { text: string; tpl: TemplateId; onClose: () => void }) {
-  const segments = parseText(text);
+  const segments = parseText(sanitize(text));
   const config = TEMPLATES.find((t) => t.id === tpl)!;
 
   return (
@@ -320,7 +331,7 @@ export default function TemplateRenderer({ text, isStreaming, visible }: Props) 
   if (!visible) return null;
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(sanitize(text));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -472,3 +483,4 @@ export default function TemplateRenderer({ text, isStreaming, visible }: Props) 
     </>
   );
 }
+

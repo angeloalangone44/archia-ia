@@ -40,7 +40,8 @@ export function useGenerate() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
+        // Strip BOM (U+FEFF) que pode vir no início do stream
+        const chunk = decoder.decode(value, { stream: true }).replace(/﻿/g, "");
         fullText += chunk;
         setText((prev) => prev + chunk);
       }
