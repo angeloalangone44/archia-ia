@@ -12,6 +12,9 @@ import {
   TIPO_STYLE,
   type Projeto,
 } from "@/lib/projects";
+import { getStageProgress } from "@/lib/stages";
+import { getNextCompromisso, TIPO_LABEL as C_TIPO_LABEL, TIPO_COLOR, relativeDay } from "@/lib/planner";
+import StageTracker from "@/components/StageTracker";
 
 const BOM_RE = new RegExp(String.fromCharCode(0xFEFF), "g");
 
@@ -114,6 +117,14 @@ function ProjetoDetalhe({ projeto, onVoltar }: { projeto: Projeto; onVoltar: () 
           </div>
         </div>
 
+        {/* Stage tracker */}
+        <div className="no-print rounded-2xl px-6 py-5 mb-4" style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}>
+          <StageTracker projetoId={projeto.id} />
+        </div>
+
+        {/* Next compromissos */}
+        <ProximosCompromissos projetoId={projeto.id} />
+
         {/* Document */}
         <div
           id="projeto-print"
@@ -130,6 +141,43 @@ function ProjetoDetalhe({ projeto, onVoltar }: { projeto: Projeto; onVoltar: () 
         </div>
       </div>
     </>
+  );
+}
+
+/* ── Próximos compromissos (no detalhe) ──────────────────── */
+
+function ProximosCompromissos({ projetoId }: { projetoId: string }) {
+  const [items, setItems] = useState<ReturnType<typeof getNextCompromisso>[]>([]);
+
+  useEffect(() => {
+    // inline import to avoid circular dependency issues at module init
+    import("@/lib/planner").then(({ getCompromissosByProjeto }) => {
+      const list = getCompromissosByProjeto(projetoId).slice(0, 3);
+      setItems(list);
+    });
+  }, [projetoId]);
+
+  if (!items.length) return null;
+
+  return (
+    <div className="no-print rounded-2xl px-6 py-5 mb-4" style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}>
+      <p className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: "var(--ink3)" }}>Próximos compromissos</p>
+      {items.map((c) => {
+        if (!c) return null;
+        return (
+          <div key={c.id} className="flex items-center gap-3 py-2" style={{ borderBottom: "0.5px solid var(--border)" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: TIPO_COLOR[c.tipo] }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] truncate" style={{ color: "var(--ink)" }}>{c.titulo}</p>
+              <p className="text-[11px]" style={{ color: "var(--ink3)" }}>{C_TIPO_LABEL[c.tipo]}</p>
+            </div>
+            <span className="text-[11px] flex-shrink-0" style={{ color: "var(--ink3)" }}>
+              {relativeDay(c.data)}{c.horario ? ` · ${c.horario}` : ""}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -182,6 +230,9 @@ export default function ProjectPanel() {
         const style = TIPO_STYLE[p.tipo];
         const ini = initials(p.nome);
         const preview = stripMarkdown(p.trecho || "").slice(0, 80);
+        const { concluidas, total, atual } = getStageProgress(p.id);
+        const pct = total > 0 ? (concluidas / total) * 100 : 0;
+        const nextC = getNextCompromisso(p.id);
         return (
           <div
             key={p.id}
@@ -199,9 +250,26 @@ export default function ProjectPanel() {
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium truncate" style={{ color: "var(--ink)" }}>{p.nome}</div>
-              {preview && (
-                <div className="text-xs mt-0.5 truncate" style={{ color: "var(--ink3)" }} title={preview}>
-                  {preview}
+              {/* Stage progress */}
+              {concluidas > 0 || atual ? (
+                <div className="mt-1 mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-full overflow-hidden flex-1" style={{ height: 3, background: "var(--border)" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: "#2D5A3D", transition: "width 0.3s" }} />
+                    </div>
+                    <span className="text-[10px] flex-shrink-0" style={{ color: "var(--ink3)" }}>
+                      {atual ? atual : `${concluidas}/${total}`} · {concluidas}/{total}
+                    </span>
+                  </div>
+                </div>
+              ) : preview ? (
+                <div className="text-xs mt-0.5 truncate" style={{ color: "var(--ink3)" }} title={preview}>{preview}</div>
+              ) : null}
+              {/* Next compromisso */}
+              {nextC && (
+                <div className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: TIPO_COLOR[nextC.tipo] }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: TIPO_COLOR[nextC.tipo], flexShrink: 0 }} />
+                  {C_TIPO_LABEL[nextC.tipo]} · {relativeDay(nextC.data)}{nextC.horario ? ` às ${nextC.horario}` : ""}
                 </div>
               )}
             </div>
