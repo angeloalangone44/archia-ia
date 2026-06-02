@@ -28,6 +28,8 @@ export type BriefingDados = {
   pet: string;
   obsGerais: string;
   ambientesDetalhados: string; // formatado como texto por ambiente
+  // modelo do escritório (opcional — salvo no localStorage)
+  modeloBriefing: string;
 };
 
 export type SpecsDados = {
@@ -97,14 +99,19 @@ Descrição do projeto (palavras do cliente): "${dados.descricao}"
 
 Use linguagem objetiva e profissional. O relatório é para uso interno do arquiteto — seja direto e útil.`,
 
-  briefing: (dados: BriefingDados) => `Gere um BRIEFING TÉCNICO DE PROJETO por ambiente, em formato de checklist consolidada.
-
-FORMATO OBRIGATÓRIO DE OUTPUT:
+  briefing: (dados: BriefingDados) => {
+    const formatoInstrucao = dados.modeloBriefing
+      ? `MODELO DE BRIEFING DO ESCRITÓRIO — use como referência de estrutura, formato e tom. Reproduza o mesmo padrão de apresentação, substituindo pelos dados deste novo projeto. Não adicione seções que não existem no modelo:\n\n---\n${dados.modeloBriefing}\n---`
+      : `FORMATO OBRIGATÓRIO DE OUTPUT:
 - Use títulos em MAIÚSCULAS para cada ambiente
 - Use bullet points (•) para cada item — NÃO use texto corrido
 - Use ✓ para itens confirmados e ⚠ para pontos que exigem atenção
 - Ao final, inclua seção "PONTOS DE ATENÇÃO" com inconsistências detectadas (ex: estilo clean selecionado mas com itens rústicos, orçamento incompatível com metragem)
-- Se não houver inconsistências, liste as próximas etapas recomendadas
+- Se não houver inconsistências, liste as próximas etapas recomendadas`;
+
+    return `Gere um BRIEFING TÉCNICO DE PROJETO por ambiente, em formato de checklist consolidada.
+
+${formatoInstrucao}
 
 INFORMAÇÕES GERAIS DO PROJETO:
 Tipo: ${dados.tipoDetalhado}
@@ -120,7 +127,8 @@ Observações gerais: ${dados.obsGerais}
 DETALHES POR AMBIENTE:
 ${dados.ambientesDetalhados}
 
-Gere o briefing por ambiente na ordem em que foram fornecidos. Seja específico e objetivo.`,
+Gere o briefing por ambiente na ordem em que foram fornecidos. Seja específico e objetivo.`;
+  },
 
   specs: (dados: SpecsDados) => `Gere um CADERNO DE ESPECIFICAÇÕES TÉCNICAS (rascunho) para o projeto abaixo.
 

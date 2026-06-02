@@ -2,8 +2,8 @@
 
 import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
-import { useState } from "react";
-import { Input, Select, Textarea, FormGroup } from "@/components/DocumentForm";
+import { useEffect, useState } from "react";
+import { Input, Select, Textarea, FormGroup, SectionDivider } from "@/components/DocumentForm";
 
 /* ── constantes ─────────────────────────────────────────── */
 
@@ -59,6 +59,8 @@ const emptyRoom = (): RoomFields => ({
   iluminacao: "", madeira: "", itens: [], aproveitarMoveis: "", obs: "",
 });
 
+const BRIEFING_MODEL_KEY = "archia-modelo-briefing";
+
 type Step1 = {
   tipoDetalhado: string;
   cliente: string;
@@ -69,6 +71,7 @@ type Step1 = {
   moradores: string;
   pet: string;
   obsGerais: string;
+  modeloBriefing: string;
 };
 
 /* ── componente de linha de campo ───────────────────────── */
@@ -273,7 +276,19 @@ export default function BriefingPage() {
   const [s1, setS1] = useState<Step1>({
     tipoDetalhado: "", cliente: "", local: "", area: "",
     orcamento: "", prazo: "", moradores: "", pet: "", obsGerais: "",
+    modeloBriefing: "",
   });
+
+  // Carrega modelo salvo ao montar
+  useEffect(() => {
+    const saved = localStorage.getItem(BRIEFING_MODEL_KEY);
+    if (saved) setS1((prev) => ({ ...prev, modeloBriefing: saved }));
+  }, []);
+
+  // Persiste modelo quando muda
+  useEffect(() => {
+    localStorage.setItem(BRIEFING_MODEL_KEY, s1.modeloBriefing);
+  }, [s1.modeloBriefing]);
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [roomData, setRoomData] = useState<Record<string, RoomFields>>({});
 
@@ -419,6 +434,26 @@ export default function BriefingPage() {
             </FormGroup>
             <FormGroup label="Observações gerais">
               <Input placeholder="Ex: segunda residência, necessidades especiais..." value={s1.obsGerais} onChange={setS1Field("obsGerais")} />
+            </FormGroup>
+          </div>
+
+          {/* Modelo de briefing do escritório */}
+          <div className="mt-7">
+            <SectionDivider>Modelo de briefing do escritório</SectionDivider>
+            <FormGroup label="Cole um briefing anterior como modelo (opcional)" full>
+              <Textarea
+                placeholder={`Cole aqui o texto de um briefing seu anterior — do Word, PDF ou e-mail. A IA vai seguir a mesma estrutura, formato e tom, substituindo pelos dados deste novo projeto.\n\nEx: "BRIEFING TÉCNICO — Residência XYZ\n\nSALA DE ESTAR\n• Estilo: Contemporâneo...\n• Piso: porcelanato 120x60..."`}
+                value={s1.modeloBriefing}
+                onChange={setS1Field("modeloBriefing")}
+                style={{ minHeight: 140 }}
+              />
+              <p className="text-[11px] mt-1.5 flex items-center gap-1" style={{ color: "var(--ink3)" }}>
+                <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3 flex-shrink-0" style={{ color: "var(--accent)" }}>
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                  <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                Salvo automaticamente — use uma vez, serve para todos os briefings futuros
+              </p>
             </FormGroup>
           </div>
 
