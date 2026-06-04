@@ -9,11 +9,11 @@ export function useGenerate() {
   const [isLoading, setIsLoading] = useState(false);
   const [visible, setVisible] = useState(false);
 
-  // nome: nome do cliente ou do projeto — usado para salvar no painel
   async function generate(
     tipo: DocumentoTipo,
     dados: Record<string, string>,
-    nome?: string
+    nome?: string,
+    onComplete?: (fullText: string) => void
   ) {
     setIsLoading(true);
     setVisible(true);
@@ -21,7 +21,7 @@ export function useGenerate() {
 
     let fullText = "";
 
-    // Strip BOM de todos os valores antes de enviar — evita ByteString error
+    // Strip BOM de todos os valores antes de enviar
     const cleanDados = Object.fromEntries(
       Object.entries(dados).map(([k, v]) => [k, v.replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "")])
     );
@@ -45,13 +45,11 @@ export function useGenerate() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        // Strip BOM (U+FEFF) que pode vir no início do stream
         const chunk = decoder.decode(value, { stream: true }).replace(new RegExp(String.fromCharCode(0xFEFF), "g"), "");
         fullText += chunk;
         setText((prev) => prev + chunk);
       }
 
-      // Auto-save ao concluir (salva o conteúdo completo)
       if (nome && fullText && !fullText.startsWith("[ERRO")) {
         saveProject({
           tipo,
@@ -59,6 +57,7 @@ export function useGenerate() {
           trecho: fullText.slice(0, 200).replace(/\n+/g, " ").trim(),
           conteudo: fullText,
         });
+        onComplete?.(fullText);
       }
     } catch (err) {
       setText(`Erro de conexão: ${err instanceof Error ? err.message : String(err)}`);
@@ -69,4 +68,3 @@ export function useGenerate() {
 
   return { text, isLoading, visible, generate };
 }
-

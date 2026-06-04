@@ -29,6 +29,10 @@ export type BriefingDados = {
   obsGerais: string;
   ambientesDetalhados: string;
   modeloBriefing: string;
+  // perfil estético
+  tomNeutro: string;
+  corQueGosta: string;
+  corQueNaoQuer: string;
 };
 
 export type SpecsDados = {
@@ -38,6 +42,8 @@ export type SpecsDados = {
   ambientes: string;
   materiais: string;
   normas: string;
+  // dados do briefing para continuidade
+  briefingData?: string;
 };
 
 export type PropostaDados = {
@@ -100,16 +106,23 @@ Descrição: "${dados.descricao}"
 Use linguagem objetiva e profissional. O relatório é para uso interno do arquiteto.`,
 
   briefing: (dados: BriefingDados) => {
+    const perfilEstetico = [
+      dados.tomNeutro && `- **Tom neutro preferido:** ${dados.tomNeutro}`,
+      dados.corQueGosta && `- **Cor favorita:** ${dados.corQueGosta}`,
+      dados.corQueNaoQuer && `- **Cor a evitar:** ${dados.corQueNaoQuer}`,
+    ].filter(Boolean).join("\n");
+
     const formatoInstrucao = dados.modeloBriefing
       ? `MODELO DE BRIEFING DO ESCRITÓRIO — use como referência de estrutura, formato e tom. Reproduza o mesmo padrão substituindo pelos dados deste projeto:\n\n---\n${dados.modeloBriefing}\n---`
       : `## REGRAS DO OUTPUT:
 - Use ## para cada ambiente (ex: ## SALA DE ESTAR)
 - Use listas com "-" para cada item dentro do ambiente
-- Use **negrito** para decisões confirmadas, sem marcação ⚠ para itens que foram preenchidos
-- Use ⚠ APENAS para inconsistências reais detectadas (ex: estilo clean escolhido mas itens rústicos selecionados) ou informações AUSENTES que impactam o projeto
-- Ao final, inclua ## PONTOS DE ATENÇÃO apenas se houver inconsistências genuínas. Se não houver, inclua ## PRÓXIMAS ETAPAS com recomendações
+- Use **negrito** para decisões confirmadas
+- Use ⚠ APENAS para inconsistências reais ou informações AUSENTES que impactam o projeto — NUNCA para campos que foram preenchidos
 - NÃO gere itens "⚠ Definir..." para campos que foram preenchidos — use as informações fornecidas diretamente
-- Inclua TODOS os dados específicos preenchidos (tipo de cuba, material de bancada, tipo de torneira, etc.) — não generalize`;
+- Inclua TODOS os dados específicos preenchidos (tipo de bacia, cuba, material de bancada, torneira, etc.) — não generalize
+- Ao final, inclua ## PRÓXIMAS ETAPAS com recomendações de encaminhamento
+- Inclua uma seção final obrigatória ## ESPECIFICAÇÕES PRELIMINARES organizando os materiais e itens escolhidos por ambiente em formato de tabela ou lista estruturada — esta seção serve de base para o caderno de especificações e para orçamento`;
 
     return `Gere um BRIEFING TÉCNICO DE PROJETO por ambiente, em formato de checklist de decisões confirmadas.
 
@@ -126,20 +139,39 @@ ${formatoInstrucao}
 - **Pet:** ${dados.pet}
 - **Observações gerais:** ${dados.obsGerais}
 
+${perfilEstetico ? `## PERFIL ESTÉTICO DO CLIENTE\n${perfilEstetico}\n\nIncorpore este perfil estético na seção de CONCEITO NORTEADOR e em cada ambiente — oriente as escolhas de cor, material e acabamento com base nessas preferências.` : ""}
+
 ## DETALHES POR AMBIENTE:
 ${dados.ambientesDetalhados}
 
 Gere o briefing por ambiente na ordem fornecida. Trate cada dado preenchido como decisão confirmada do cliente, não como pendência.`;
   },
 
-  specs: (dados: SpecsDados) => `Gere um CADERNO DE ESPECIFICAÇÕES TÉCNICAS (rascunho) para o projeto abaixo.
+  specs: (dados: SpecsDados) => {
+    const temBriefing = !!dados.briefingData;
+
+    const instrucaoBriefing = temBriefing
+      ? `IMPORTANTE: Este caderno é gerado a partir de dados coletados no briefing. Use as escolhas já feitas como ponto de partida obrigatório — não sugira materiais genéricos para itens onde o cliente já decidiu. Para cada escolha já definida, expanda com:
+1. Norma ABNT aplicável (quando houver)
+2. Dimensões padrão recomendadas
+3. Observação técnica relevante (instalação, manutenção, cuidado especial)
+
+DADOS DO BRIEFING:
+${dados.briefingData}
+
+---`
+      : "";
+
+    return `Gere um CADERNO DE ESPECIFICAÇÕES TÉCNICAS (rascunho) para o projeto abaixo.
+
+${instrucaoBriefing}
 
 Para cada ambiente listado, especifique em Markdown:
 - Piso (material, espessura, acabamento, norma aplicável)
 - Parede (revestimento, tinta, altura do revestimento se houver)
 - Teto (forro, pintura, altura)
 - Esquadrias (padrão indicado)
-- Louças e metais (quando aplicável)
+- Louças e metais (quando aplicável) — partindo das escolhas do briefing quando disponíveis
 - Iluminação (tipo recomendado)
 - Observações técnicas e normas relevantes
 
@@ -153,7 +185,8 @@ Inclua ao final ## MATERIAIS GERAIS e ## NORMAS ABNT APLICÁVEIS.
 - **Preferências de materiais:** ${dados.materiais}
 - **Restrições:** ${dados.normas}
 
-> ⚠ **AVISO:** Este é um rascunho técnico gerado por IA. Deve ser revisado e validado pelo arquiteto responsável antes de qualquer uso em projeto.`,
+> ⚠ **AVISO:** Este é um rascunho técnico gerado por IA. Deve ser revisado e validado pelo arquiteto responsável antes de qualquer uso em projeto.`;
+  },
 
   proposta: (dados: PropostaDados) => {
     const temIdentidade = dados.nomeEscritorio || dados.diferenciais || dados.fraseApresentacao;
@@ -205,7 +238,7 @@ ${dados.estruturaPersonalizada}
 
 ${instrucaoTom}
 
-A proposta deve soar como se o próprio arquiteto tivesse escrito — não genérica. Use as informações de identidade para personalizar.
+A proposta deve soar como se o próprio arquiteto tivesse escrito — não genérica. Use as informações de identidade para personalizar cada seção.
 
 ${identidadeBlock}
 ${estruturaSecoes}

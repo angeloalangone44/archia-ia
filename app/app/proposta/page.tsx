@@ -6,29 +6,111 @@ import DocumentForm, {
 import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
+import {
+  getArchiaProjects,
+  getProjetosParaProposta,
+  updateArchiaDocumento,
+  type ArchiaProjetoUnificado,
+} from "@/lib/archia-project";
 
 const STORAGE_KEY = "archia-estrutura-proposta";
 
+/* ── seletor de projeto ─────────────────────────────────── */
+
+function ProjectSelector({
+  projetoId, onChange,
+}: { projetoId: string; onChange: (id: string) => void }) {
+  const [projetos, setProjetos] = useState<ArchiaProjetoUnificado[]>([]);
+
+  useEffect(() => { setProjetos(getArchiaProjects()); }, []);
+  if (projetos.length === 0) return null;
+
+  return (
+    <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl"
+      style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
+      <span className="text-[12px]" style={{ color: "var(--ink3)" }}>Projeto:</span>
+      <select value={projetoId} onChange={(e) => onChange(e.target.value)}
+        className="text-[13px] flex-1"
+        style={{ background: "transparent", border: "none", outline: "none", color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}>
+        <option value="">+ Novo projeto</option>
+        {projetos.map((p) => (
+          <option key={p.id} value={p.id}>{p.cliente.nome} — {p.projeto.tipo || "projeto"}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/* ── banner de continuidade ─────────────────────────────── */
+
+function ContinuidadeBanner({
+  onCarregar,
+}: {
+  onCarregar: (p: ArchiaProjetoUnificado) => void;
+}) {
+  const [projetos, setProjetos] = useState<ArchiaProjetoUnificado[]>([]);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    setProjetos(getProjetosParaProposta());
+  }, []);
+
+  if (dismissed || projetos.length === 0) return null;
+
+  const p = projetos[0];
+
+  return (
+    <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3"
+      style={{ background: "#EAF2EC", border: "1px solid #A8D5B2" }}>
+      <div className="text-lg">💡</div>
+      <div className="flex-1">
+        <p className="text-[13px] font-medium" style={{ color: "#1A3A1A" }}>
+          Projeto de {p.cliente.nome} sem proposta — usar dados do briefing?
+        </p>
+        <p className="text-[11px] mt-0.5" style={{ color: "#3A5A3A" }}>
+          {p.projeto.tipo} · {p.cliente.localizacao || "sem localização"} · briefing gerado {new Date(p.documentos.briefing!.data).toLocaleDateString("pt-BR")}
+        </p>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => { onCarregar(p); setDismissed(true); }}
+            className="text-[12px] px-3 py-1.5 rounded-lg text-white"
+            style={{ background: "#2D5A3D", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Usar dados do briefing
+          </button>
+          <button onClick={() => setDismissed(true)}
+            className="text-[12px] px-3 py-1.5 rounded-lg"
+            style={{ background: "transparent", border: "0.5px solid #A8D5B2", color: "#3A5A3A", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Ignorar
+          </button>
+        </div>
+        {projetos.length > 1 && (
+          <p className="text-[10px] mt-1.5" style={{ color: "#5A7A5A" }}>
+            +{projetos.length - 1} outro{projetos.length > 2 ? "s" : ""} projeto{projetos.length > 2 ? "s" : ""} aguardando proposta
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── página ─────────────────────────────────────────────── */
+
 export default function PropostaPage() {
   const { text, isLoading, visible, generate } = useGenerate();
+  const [projetoId, setProjetoId] = useState("");
 
   const [f, setF] = useState({
     cliente: "", tipo: "", escopo: "",
     valor: "", pagto: "", prazo: "", validade: "", exclusoes: "", diferencial: "",
     revisoes: "", responsabilidadesCliente: "",
-    // identidade do escritório
     nomeEscritorio: "", tomComunicacao: "", diferenciais: "", fraseApresentacao: "",
-    // estrutura personalizada (persiste no localStorage)
     estruturaPersonalizada: "",
   });
 
-  // Carrega estrutura salva ao montar
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) setF((prev) => ({ ...prev, estruturaPersonalizada: saved }));
   }, []);
 
-  // Persiste estrutura no localStorage quando muda
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, f.estruturaPersonalizada);
   }, [f.estruturaPersonalizada]);
@@ -37,12 +119,40 @@ export default function PropostaPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setF((prev) => ({ ...prev, [k]: e.target.value }));
 
+  function handleSelectProject(id: string) {
+    setProjetoId(id);
+    if (!id) return;
+    const projetos = getArchiaProjects();
+    const p = projetos.find((x) => x.id === id);
+    if (!p) return;
+    setF((prev) => ({
+      ...prev,
+      cliente: p.cliente.nome,
+      tipo: p.projeto.tipo,
+      prazo: p.projeto.prazo,
+    }));
+  }
+
+  function handleCarregarBriefing(p: ArchiaProjetoUnificado) {
+    setProjetoId(p.id);
+    setF((prev) => ({
+      ...prev,
+      cliente: p.cliente.nome,
+      tipo: p.projeto.tipo,
+      prazo: p.projeto.prazo,
+    }));
+  }
+
   function handleSubmit() {
     if (!f.cliente || !f.escopo || !f.valor) {
       alert("Preencha os campos obrigatórios: cliente, escopo e honorários.");
       return;
     }
-    generate("proposta", f, f.cliente);
+    generate("proposta", f, f.cliente, (fullText) => {
+      if (projetoId) {
+        updateArchiaDocumento(projetoId, "proposta", fullText);
+      }
+    });
   }
 
   return (
@@ -53,6 +163,9 @@ export default function PropostaPage() {
           Informe escopo, honorários e a identidade do escritório — a IA gera uma proposta no seu tom
         </p>
       </div>
+
+      <ContinuidadeBanner onCarregar={handleCarregarBriefing} />
+      <ProjectSelector projetoId={projetoId} onChange={handleSelectProject} />
 
       <DocumentForm onSubmit={handleSubmit} isLoading={isLoading} buttonLabel="Gerar proposta comercial">
         <FormGrid>
@@ -91,7 +204,7 @@ export default function PropostaPage() {
 
           <FormGroup label="Cole uma proposta antiga como modelo (opcional)" full>
             <Textarea
-              placeholder={`Cole o texto de uma proposta anterior ou descreva as seções que você costuma incluir.\n\nExemplo de estrutura:\nApresentação → Escopo → Etapas → Honorários → Aceite\n\nOu cole uma proposta completa — o Word, PDF ou e-mail. A IA segue a mesma estrutura, tom e nível de detalhe.`}
+              placeholder={`Cole o texto de uma proposta anterior ou descreva as seções que você costuma incluir.\n\nExemplo de estrutura:\nApresentação → Escopo → Etapas → Honorários → Aceite\n\nOu cole uma proposta completa — do Word, PDF ou e-mail. A IA segue a mesma estrutura, tom e nível de detalhe.`}
               value={f.estruturaPersonalizada}
               onChange={set("estruturaPersonalizada")}
               style={{ minHeight: 160 }}

@@ -4,6 +4,14 @@ import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
 import { Input, Select, Textarea, FormGroup, SectionDivider } from "@/components/DocumentForm";
+import {
+  getArchiaProjects,
+  saveArchiaProject,
+  getArchiaProjectById,
+  emptyAmbiente,
+  type AmbienteData,
+  type ArchiaProjetoUnificado,
+} from "@/lib/archia-project";
 
 /* ── constantes ─────────────────────────────────────────── */
 
@@ -41,48 +49,13 @@ const ROOM_ITEMS: Record<string, string[]> = {
   "home-office":  ["Mesa em L", "Parede de livros", "Quadro branco", "Armário arquivo", "Bancada reunião", "Iluminação técnica"],
 };
 
+const BRIEFING_MODEL_KEY = "archia-modelo-briefing";
+
 /* ── tipos ──────────────────────────────────────────────── */
 
-type RoomFields = {
-  estilo: string;
-  paredeRevestimento: string;
-  pisoRevestimento: string;
-  iluminacao: string;
-  madeira: string;
-  itens: string[];
-  aproveitarMoveis: string;       // "Sim" | "Não" | ""
-  aproveitarMoveisDetalhe: string;
-  obs: string;
-  // banheiro + lavabo
-  tipoCuba: string;
-  tipoTorneira: string;
-  tipoChuveiro: string;
-  materialBancada: string;
-  tipoMetal: string;
-  // cozinha
-  cooktop: string;
-  numBocas: string;
-  coifa: string;
-  lavaLouca: string;
-  cubaCozinha: string;
-  materialBancadaCozinha: string;
-  tipoMetalCozinha: string;
-  // varanda
-  churrasqueira: string;
-  pergolado: string;
-  fechamentoVaranda: string;
-  piscina: string;
-};
+type RoomFields = AmbienteData;
 
-const emptyRoom = (): RoomFields => ({
-  estilo: "", paredeRevestimento: "", pisoRevestimento: "",
-  iluminacao: "", madeira: "", itens: [], aproveitarMoveis: "",
-  aproveitarMoveisDetalhe: "", obs: "",
-  tipoCuba: "", tipoTorneira: "", tipoChuveiro: "", materialBancada: "", tipoMetal: "",
-  cooktop: "", numBocas: "", coifa: "", lavaLouca: "", cubaCozinha: "",
-  materialBancadaCozinha: "", tipoMetalCozinha: "",
-  churrasqueira: "", pergolado: "", fechamentoVaranda: "", piscina: "",
-});
+const emptyRoom = (): RoomFields => emptyAmbiente();
 
 type Step1 = {
   tipoDetalhado: string;
@@ -95,9 +68,10 @@ type Step1 = {
   pet: string;
   obsGerais: string;
   modeloBriefing: string;
+  tomNeutro: string;
+  corQueGosta: string;
+  corQueNaoQuer: string;
 };
-
-const BRIEFING_MODEL_KEY = "archia-modelo-briefing";
 
 /* ── campo de linha ─────────────────────────────────────── */
 
@@ -106,6 +80,32 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
     <div className="flex items-start gap-3 py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
       <span className="text-[12px] w-44 flex-shrink-0 pt-2.5" style={{ color: "var(--ink3)" }}>{label}</span>
       <div className="flex-1">{children}</div>
+    </div>
+  );
+}
+
+/* ── radio simples ──────────────────────────────────────── */
+
+function RadioRow({
+  label, name, value, onChange, options
+}: {
+  label: string; name: string; value: string;
+  onChange: (v: string) => void; options: string[];
+}) {
+  return (
+    <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
+      <p className="text-[12px] mb-2" style={{ color: "var(--ink3)" }}>{label}</p>
+      <div className="flex gap-5">
+        {options.map((opt) => (
+          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
+            style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
+            <input type="radio" name={name} value={opt} checked={value === opt}
+              onChange={() => onChange(opt)}
+              style={{ accentColor: "var(--accent)", cursor: "pointer" }} />
+            {opt}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
@@ -133,6 +133,7 @@ function RoomForm({ roomId, roomLabel, data, onChange }: {
   const isBanheiro = roomId === "banheiro" || roomId === "lavabo";
   const isCozinha  = roomId === "cozinha";
   const isVaranda  = roomId === "varanda";
+  const isQuarto   = roomId === "quarto-casal" || roomId === "quarto-kids";
 
   return (
     <div className="rounded-2xl overflow-hidden mb-3" style={{ border: "0.5px solid var(--border)", background: "var(--surface)" }}>
@@ -191,9 +192,60 @@ function RoomForm({ roomId, roomLabel, data, onChange }: {
             </Select>
           </FieldRow>
 
+          {/* ── Quartos ─── */}
+          {isQuarto && (
+            <>
+              <FieldRow label="Tamanho da cama">
+                <Select value={data.tamanhoCama} onChange={set("tamanhoCama")}>
+                  <option value="">—</option>
+                  <option>Solteiro</option>
+                  <option>Casal</option>
+                  <option>Queen</option>
+                  <option>King</option>
+                  <option>Super King</option>
+                  <option>Sofá-cama</option>
+                  <option>Manter existente</option>
+                  <option>Sem cama</option>
+                </Select>
+              </FieldRow>
+              <FieldRow label="Tipo de cabeceira">
+                <Select value={data.tipoCabeceira} onChange={set("tipoCabeceira")}>
+                  <option value="">—</option>
+                  <option>Estofada</option>
+                  <option>Madeira</option>
+                  <option>Manter existente</option>
+                </Select>
+              </FieldRow>
+              <RadioRow label="Bancada de estudos / trabalho?" name={`bancadaEstudos-${roomId}`}
+                value={data.bancadaEstudos} onChange={(v) => onChange({ ...data, bancadaEstudos: v })}
+                options={["Sim", "Não"]} />
+              <RadioRow label="Penteadeira?" name={`penteadeira-${roomId}`}
+                value={data.penteadeira} onChange={(v) => onChange({ ...data, penteadeira: v })}
+                options={["Sim", "Não"]} />
+            </>
+          )}
+
           {/* ── Banheiro / Lavabo ─── */}
           {isBanheiro && (
             <>
+              <FieldRow label="Tipo de bacia">
+                <Select value={data.tipoBacia} onChange={set("tipoBacia")}>
+                  <option value="">—</option>
+                  <option>Com caixa acoplada</option>
+                  <option>Sem caixa (acopla embutida)</option>
+                  <option>Suspensa</option>
+                  <option>Manter existente</option>
+                </Select>
+              </FieldRow>
+              <FieldRow label="Cor da bacia">
+                <Select value={data.corBacia} onChange={set("corBacia")}>
+                  <option value="">—</option>
+                  <option>Branca</option>
+                  <option>Preta</option>
+                  <option>Manter existente</option>
+                  <option>Outro</option>
+                </Select>
+              </FieldRow>
               <FieldRow label="Tipo de cuba">
                 <Select value={data.tipoCuba} onChange={set("tipoCuba")}>
                   <option value="">—</option>
@@ -368,33 +420,53 @@ function RoomForm({ roomId, roomLabel, data, onChange }: {
             </div>
           )}
 
-          {/* Aproveitar móveis — radio + condicional */}
+          {/* Móveis existentes a manter */}
           <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
-            <p className="text-[12px] mb-2" style={{ color: "var(--ink3)" }}>Aproveitar móveis?</p>
-            <div className="flex gap-5">
+            <p className="text-[12px] mb-2" style={{ color: "var(--ink3)" }}>Algum móvel / item existente deve ser mantido?</p>
+            <div className="flex gap-5 mb-2">
               {["Sim", "Não"].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
-                  <input
-                    type="radio"
-                    name={`aproveitarMoveis-${roomId}`}
-                    value={opt}
+                <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
+                  style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
+                  <input type="radio" name={`aproveitarMoveis-${roomId}`} value={opt}
                     checked={data.aproveitarMoveis === opt}
                     onChange={() => onChange({ ...data, aproveitarMoveis: opt })}
-                    style={{ accentColor: "var(--accent)", cursor: "pointer" }}
-                  />
+                    style={{ accentColor: "var(--accent)", cursor: "pointer" }} />
                   {opt}
                 </label>
               ))}
             </div>
             {data.aproveitarMoveis === "Sim" && (
-              <div className="mt-2">
-                <Textarea
-                  placeholder="Quais móveis serão aproveitados? Ex: sofá da sala, armário do quarto master..."
-                  value={data.aproveitarMoveisDetalhe}
-                  onChange={(e) => onChange({ ...data, aproveitarMoveisDetalhe: e.target.value })}
-                  style={{ minHeight: 60 }}
-                />
-              </div>
+              <Textarea
+                placeholder="Quais móveis serão mantidos? Ex: sofá da sala, armário do quarto master..."
+                value={data.aproveitarMoveisDetalhe}
+                onChange={(e) => onChange({ ...data, aproveitarMoveisDetalhe: e.target.value })}
+                style={{ minHeight: 55 }}
+              />
+            )}
+          </div>
+
+          {/* Móveis novos */}
+          <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
+            <p className="text-[12px] mb-2" style={{ color: "var(--ink3)" }}>Deseja incluir algum móvel solto novo?</p>
+            <div className="flex gap-5 mb-2">
+              {["Sim", "Não"].map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
+                  style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
+                  <input type="radio" name={`moveisNovos-${roomId}`} value={opt}
+                    checked={data.moveisNovos === opt}
+                    onChange={() => onChange({ ...data, moveisNovos: opt })}
+                    style={{ accentColor: "var(--accent)", cursor: "pointer" }} />
+                  {opt}
+                </label>
+              ))}
+            </div>
+            {data.moveisNovos === "Sim" && (
+              <Textarea
+                placeholder="Quais móveis novos? Ex: sofá novo, mesa de jantar com 8 lugares..."
+                value={data.moveisNovosDetalhe}
+                onChange={(e) => onChange({ ...data, moveisNovosDetalhe: e.target.value })}
+                style={{ minHeight: 55 }}
+              />
             )}
           </div>
 
@@ -436,16 +508,220 @@ function Stepper({ step }: { step: number }) {
   );
 }
 
+/* ── project selector ───────────────────────────────────── */
+
+function ProjectSelector({
+  projetoId,
+  onChange,
+}: {
+  projetoId: string;
+  onChange: (id: string) => void;
+}) {
+  const [projetos, setProjetos] = useState<ArchiaProjetoUnificado[]>([]);
+
+  useEffect(() => {
+    setProjetos(getArchiaProjects());
+  }, []);
+
+  if (projetos.length === 0) return null;
+
+  return (
+    <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl"
+      style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
+      <span className="text-[12px]" style={{ color: "var(--ink3)" }}>Projeto:</span>
+      <select
+        value={projetoId}
+        onChange={(e) => onChange(e.target.value)}
+        className="text-[13px] flex-1"
+        style={{
+          background: "transparent", border: "none", outline: "none",
+          color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
+        }}
+      >
+        <option value="">+ Novo projeto</option>
+        {projetos.map((p) => (
+          <option key={p.id} value={p.id}>{p.cliente.nome} — {p.projeto.tipo || "projeto"}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/* ── serializar ambientes para prompt ───────────────────── */
+
+function serializeRooms(selectedRooms: string[], roomData: Record<string, RoomFields>): string {
+  return selectedRooms.map((id) => {
+    const label = ROOMS.find((r) => r.id === id)?.label ?? id;
+    const d = roomData[id] ?? emptyRoom();
+    const isBanheiro = id === "banheiro" || id === "lavabo";
+    const isQuarto   = id === "quarto-casal" || id === "quarto-kids";
+    const lines = [
+      `[${label.toUpperCase()}]`,
+      d.estilo                && `• Estilo: ${d.estilo}`,
+      d.paredeRevestimento    && `• Revestimento de parede: ${d.paredeRevestimento}`,
+      d.pisoRevestimento      && `• Revestimento de piso: ${d.pisoRevestimento}`,
+      d.iluminacao            && `• Iluminação: ${d.iluminacao}`,
+      d.madeira               && `• Tom de madeira: ${d.madeira}`,
+      // quartos
+      isQuarto && d.tamanhoCama    && `• Tamanho da cama: ${d.tamanhoCama}`,
+      isQuarto && d.tipoCabeceira  && `• Tipo de cabeceira: ${d.tipoCabeceira}`,
+      isQuarto && d.bancadaEstudos && `• Bancada de estudos: ${d.bancadaEstudos}`,
+      isQuarto && d.penteadeira    && `• Penteadeira: ${d.penteadeira}`,
+      // banheiro / lavabo
+      isBanheiro && d.tipoBacia        && `• Tipo de bacia: ${d.tipoBacia}`,
+      isBanheiro && d.corBacia         && `• Cor da bacia: ${d.corBacia}`,
+      isBanheiro && d.tipoCuba         && `• Tipo de cuba: ${d.tipoCuba}`,
+      isBanheiro && d.tipoTorneira     && `• Tipo de torneira: ${d.tipoTorneira}`,
+      isBanheiro && d.tipoChuveiro     && id === "banheiro" && `• Tipo de chuveiro: ${d.tipoChuveiro}`,
+      isBanheiro && d.materialBancada  && `• Material da bancada: ${d.materialBancada}`,
+      isBanheiro && d.tipoMetal        && `• Tipo de metal: ${d.tipoMetal}`,
+      // cozinha
+      id === "cozinha" && d.cooktop              && `• Cooktop: ${d.cooktop}${d.numBocas ? ` — ${d.numBocas} bocas` : ""}`,
+      id === "cozinha" && d.coifa                && `• Coifa/depurador: ${d.coifa}`,
+      id === "cozinha" && d.lavaLouca            && `• Lava-louça: ${d.lavaLouca}`,
+      id === "cozinha" && d.cubaCozinha          && `• Cuba: ${d.cubaCozinha}`,
+      id === "cozinha" && d.materialBancadaCozinha && `• Material da bancada: ${d.materialBancadaCozinha}`,
+      id === "cozinha" && d.tipoMetalCozinha     && `• Tipo de metal: ${d.tipoMetalCozinha}`,
+      // varanda
+      id === "varanda" && d.churrasqueira        && `• Churrasqueira: ${d.churrasqueira}`,
+      id === "varanda" && d.pergolado            && `• Pergolado: ${d.pergolado}`,
+      id === "varanda" && d.fechamentoVaranda    && `• Fechamento de varanda: ${d.fechamentoVaranda}`,
+      id === "varanda" && d.piscina              && `• Piscina: ${d.piscina}`,
+      // comuns
+      d.itens.length > 0 && `• Itens desejados: ${d.itens.join(", ")}`,
+      d.aproveitarMoveis && `• Móveis existentes a manter: ${d.aproveitarMoveis}${d.aproveitarMoveisDetalhe ? ` — ${d.aproveitarMoveisDetalhe}` : ""}`,
+      d.moveisNovos && `• Móveis novos: ${d.moveisNovos}${d.moveisNovosDetalhe ? ` — ${d.moveisNovosDetalhe}` : ""}`,
+      d.obs              && `• Observações: ${d.obs}`,
+    ].filter(Boolean);
+    return lines.join("\n");
+  }).join("\n\n");
+}
+
+/* ── link público ───────────────────────────────────────── */
+
+function PublicLinkButton({ s1, selectedRooms, roomData }: {
+  s1: Step1;
+  selectedRooms: string[];
+  roomData: Record<string, RoomFields>;
+}) {
+  const [copied, setCopied] = useState(false);
+  const [link, setLink] = useState("");
+
+  function generateLink() {
+    const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    // Salva no localStorage os dados iniciais do formulário para referência
+    const payload = {
+      tipoDetalhado: s1.tipoDetalhado,
+      selectedRooms,
+      createdAt: new Date().toISOString(),
+    };
+    localStorage.setItem(`archia_client_form_${token}`, JSON.stringify(payload));
+    const url = `${window.location.origin}/briefing/${token}`;
+    setLink(url);
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="mt-4 rounded-xl p-4" style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
+      <p className="text-[12px] font-medium mb-3" style={{ color: "var(--ink2)" }}>Enviar formulário para o cliente</p>
+      {!link ? (
+        <button
+          type="button"
+          onClick={generateLink}
+          className="text-[12px] px-4 py-2 rounded-lg"
+          style={{ background: "var(--surface)", border: "0.5px solid var(--border-strong)", color: "var(--ink2)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+        >
+          Gerar link para cliente
+        </button>
+      ) : (
+        <div>
+          <div className="flex items-center gap-2 rounded-lg px-3 py-2 mb-2"
+            style={{ background: "var(--surface)", border: "0.5px solid var(--border-strong)" }}>
+            <span className="text-[11px] flex-1 truncate" style={{ color: "var(--ink3)", fontFamily: "monospace" }}>{link}</span>
+            <button onClick={copyLink} className="text-[11px] px-2 py-0.5 rounded"
+              style={{ background: "var(--accent)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              {copied ? "Copiado!" : "Copiar"}
+            </button>
+          </div>
+          <p className="text-[11px]" style={{ color: "var(--ink3)" }}>
+            Envie este link para o cliente. Quando ele preencher, traga o link de resposta para esta página.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── banner: carregar dados do cliente ──────────────────── */
+
+function ClientDataBanner({ onLoad }: { onLoad: (data: Record<string, string>) => void }) {
+  const [show, setShow] = useState(false);
+  const [pendingData, setPendingData] = useState<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (hash.startsWith("#client=")) {
+      try {
+        const encoded = hash.slice("#client=".length);
+        const decoded = JSON.parse(atob(encoded));
+        setPendingData(decoded);
+        setShow(true);
+        window.history.replaceState(null, "", window.location.pathname);
+      } catch {
+        // ignore malformed hash
+      }
+    }
+  }, []);
+
+  if (!show || !pendingData) return null;
+
+  return (
+    <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3"
+      style={{ background: "#EAF2EC", border: "1px solid #A8D5B2" }}>
+      <div className="text-lg">📋</div>
+      <div className="flex-1">
+        <p className="text-[13px] font-medium" style={{ color: "#1A3A1A" }}>
+          Cliente preencheu o briefing — carregar respostas?
+        </p>
+        <p className="text-[11px] mt-0.5" style={{ color: "#3A5A3A" }}>
+          {pendingData.nome ? `${pendingData.nome} · ` : ""}{Object.keys(pendingData).length} campos preenchidos
+        </p>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={() => { onLoad(pendingData); setShow(false); }}
+            className="text-[12px] px-3 py-1.5 rounded-lg text-white"
+            style={{ background: "#2D5A3D", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Carregar respostas
+          </button>
+          <button onClick={() => setShow(false)}
+            className="text-[12px] px-3 py-1.5 rounded-lg"
+            style={{ background: "transparent", border: "0.5px solid #A8D5B2", color: "#3A5A3A", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Ignorar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── página principal ───────────────────────────────────── */
 
 export default function BriefingPage() {
   const { text, isLoading, visible, generate } = useGenerate();
   const [step, setStep] = useState(1);
+  const [projetoId, setProjetoId] = useState("");
 
   const [s1, setS1] = useState<Step1>({
     tipoDetalhado: "", cliente: "", local: "", area: "",
     orcamento: "", prazo: "", moradores: "", pet: "", obsGerais: "",
     modeloBriefing: "",
+    tomNeutro: "", corQueGosta: "", corQueNaoQuer: "",
   });
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [roomData, setRoomData] = useState<Record<string, RoomFields>>({});
@@ -459,6 +735,60 @@ export default function BriefingPage() {
     localStorage.setItem(BRIEFING_MODEL_KEY, s1.modeloBriefing);
   }, [s1.modeloBriefing]);
 
+  // Carregar projeto existente quando selecionado
+  function handleSelectProject(id: string) {
+    setProjetoId(id);
+    if (!id) return;
+    const p = getArchiaProjectById(id);
+    if (!p) return;
+    setS1((prev) => ({
+      ...prev,
+      cliente: p.cliente.nome,
+      local: p.cliente.localizacao,
+      moradores: p.cliente.moradores,
+      pet: p.cliente.pet,
+      area: p.projeto.area,
+      orcamento: p.projeto.orcamento,
+      prazo: p.projeto.prazo,
+      tipoDetalhado: p.projeto.tipo,
+      tomNeutro: p.cliente.perfilEstetico.tomNeutro,
+      corQueGosta: p.cliente.perfilEstetico.corQueGosta,
+      corQueNaoQuer: p.cliente.perfilEstetico.corQueNaoQuer,
+    }));
+    if (p.ambientesOrdem.length > 0) {
+      setSelectedRooms(p.ambientesOrdem);
+      setRoomData(p.ambientes as Record<string, RoomFields>);
+    }
+  }
+
+  // Carregar respostas do cliente via hash
+  function handleLoadClientData(data: Record<string, string>) {
+    setS1((prev) => ({
+      ...prev,
+      cliente: data.nome || prev.cliente,
+      local: data.localizacao || prev.local,
+      moradores: data.moradores || prev.moradores,
+      pet: data.pet || prev.pet,
+      area: data.area || prev.area,
+      orcamento: data.orcamento || prev.orcamento,
+      prazo: data.prazo || prev.prazo,
+      tipoDetalhado: data.tipoDetalhado || prev.tipoDetalhado,
+      tomNeutro: data.tomNeutro || prev.tomNeutro,
+      corQueGosta: data.corQueGosta || prev.corQueGosta,
+      corQueNaoQuer: data.corQueNaoQuer || prev.corQueNaoQuer,
+      obsGerais: data.obsGerais || prev.obsGerais,
+    }));
+    if (data.selectedRooms) {
+      try {
+        const rooms = JSON.parse(data.selectedRooms) as string[];
+        setSelectedRooms(rooms);
+        rooms.forEach((id) => {
+          if (!roomData[id]) setRoomData((prev) => ({ ...prev, [id]: emptyRoom() }));
+        });
+      } catch { /* ignore */ }
+    }
+  }
+
   const setS1Field = (k: keyof Step1) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setS1((prev) => ({ ...prev, [k]: e.target.value }));
@@ -468,49 +798,46 @@ export default function BriefingPage() {
     if (!roomData[id]) setRoomData((prev) => ({ ...prev, [id]: emptyRoom() }));
   }
 
-  function serializeRooms(): string {
-    return selectedRooms.map((id) => {
-      const label = ROOMS.find((r) => r.id === id)?.label ?? id;
-      const d = roomData[id] ?? emptyRoom();
-      const isBanheiro = id === "banheiro" || id === "lavabo";
-      const lines = [
-        `[${label.toUpperCase()}]`,
-        d.estilo                && `• Estilo: ${d.estilo}`,
-        d.paredeRevestimento    && `• Revestimento de parede: ${d.paredeRevestimento}`,
-        d.pisoRevestimento      && `• Revestimento de piso: ${d.pisoRevestimento}`,
-        d.iluminacao            && `• Iluminação: ${d.iluminacao}`,
-        d.madeira               && `• Tom de madeira: ${d.madeira}`,
-        // banheiro / lavabo
-        isBanheiro && d.tipoCuba         && `• Tipo de cuba: ${d.tipoCuba}`,
-        isBanheiro && d.tipoTorneira     && `• Tipo de torneira: ${d.tipoTorneira}`,
-        isBanheiro && d.tipoChuveiro     && id === "banheiro" && `• Tipo de chuveiro: ${d.tipoChuveiro}`,
-        isBanheiro && d.materialBancada  && `• Material da bancada: ${d.materialBancada}`,
-        isBanheiro && d.tipoMetal        && `• Tipo de metal: ${d.tipoMetal}`,
-        // cozinha
-        id === "cozinha" && d.cooktop              && `• Cooktop: ${d.cooktop}${d.numBocas ? ` — ${d.numBocas} bocas` : ""}`,
-        id === "cozinha" && d.coifa                && `• Coifa/depurador: ${d.coifa}`,
-        id === "cozinha" && d.lavaLouca            && `• Lava-louça: ${d.lavaLouca}`,
-        id === "cozinha" && d.cubaCozinha          && `• Cuba: ${d.cubaCozinha}`,
-        id === "cozinha" && d.materialBancadaCozinha && `• Material da bancada: ${d.materialBancadaCozinha}`,
-        id === "cozinha" && d.tipoMetalCozinha     && `• Tipo de metal: ${d.tipoMetalCozinha}`,
-        // varanda
-        id === "varanda" && d.churrasqueira        && `• Churrasqueira: ${d.churrasqueira}`,
-        id === "varanda" && d.pergolado            && `• Pergolado: ${d.pergolado}`,
-        id === "varanda" && d.fechamentoVaranda    && `• Fechamento de varanda: ${d.fechamentoVaranda}`,
-        id === "varanda" && d.piscina              && `• Piscina: ${d.piscina}`,
-        // comuns
-        d.itens.length > 0 && `• Itens desejados: ${d.itens.join(", ")}`,
-        d.aproveitarMoveis && `• Aproveitar móveis: ${d.aproveitarMoveis}${d.aproveitarMoveisDetalhe ? ` — ${d.aproveitarMoveisDetalhe}` : ""}`,
-        d.obs              && `• Observações: ${d.obs}`,
-      ].filter(Boolean);
-      return lines.join("\n");
-    }).join("\n\n");
-  }
-
   function handleGenerate() {
     if (selectedRooms.length === 0) { alert("Selecione pelo menos um ambiente."); return; }
-    const dados = { ...s1, ambientesDetalhados: serializeRooms() };
-    generate("briefing", dados, s1.cliente || "Briefing");
+    const dados = {
+      ...s1,
+      ambientesDetalhados: serializeRooms(selectedRooms, roomData),
+    };
+    generate("briefing", dados, s1.cliente || "Briefing", (fullText) => {
+      // Salva / atualiza projeto unificado
+      const existing = projetoId ? getArchiaProjectById(projetoId) : null;
+      const projeto: ArchiaProjetoUnificado = {
+        id: existing?.id ?? crypto.randomUUID(),
+        createdAt: existing?.createdAt ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        cliente: {
+          nome: s1.cliente,
+          localizacao: s1.local,
+          moradores: s1.moradores,
+          pet: s1.pet,
+          perfilEstetico: {
+            tomNeutro: s1.tomNeutro,
+            corQueGosta: s1.corQueGosta,
+            corQueNaoQuer: s1.corQueNaoQuer,
+          },
+        },
+        projeto: {
+          tipo: s1.tipoDetalhado,
+          area: s1.area,
+          orcamento: s1.orcamento,
+          prazo: s1.prazo,
+        },
+        ambientes: roomData as Record<string, AmbienteData>,
+        ambientesOrdem: selectedRooms,
+        documentos: {
+          ...(existing?.documentos ?? {}),
+          briefing: { conteudo: fullText, data: new Date().toISOString() },
+        },
+      };
+      saveArchiaProject(projeto);
+      setProjetoId(projeto.id);
+    });
   }
 
   const btnStyle = {
@@ -530,6 +857,8 @@ export default function BriefingPage() {
         </p>
       </div>
 
+      <ClientDataBanner onLoad={handleLoadClientData} />
+      <ProjectSelector projetoId={projetoId} onChange={handleSelectProject} />
       <Stepper step={step} />
 
       {/* ── PASSO 1 ─────────────────────────────────────── */}
@@ -590,6 +919,27 @@ export default function BriefingPage() {
             <FormGroup label="Observações gerais">
               <Input placeholder="Ex: segunda residência, necessidades especiais..." value={s1.obsGerais} onChange={setS1Field("obsGerais")} />
             </FormGroup>
+          </div>
+
+          {/* Perfil estético */}
+          <div className="mt-7">
+            <SectionDivider>Perfil estético</SectionDivider>
+            <div className="grid grid-cols-2 gap-4">
+              <FormGroup label="Tom neutro preferido">
+                <Select value={s1.tomNeutro} onChange={setS1Field("tomNeutro")}>
+                  <option value="">—</option>
+                  <option>Cinza</option>
+                  <option>Bege</option>
+                  <option>Sem preferência</option>
+                </Select>
+              </FormGroup>
+              <FormGroup label="Cor que mais gosta">
+                <Input placeholder="Ex: verde escuro, terracota..." value={s1.corQueGosta} onChange={setS1Field("corQueGosta")} />
+              </FormGroup>
+              <FormGroup label="Cor que definitivamente NÃO quer" full>
+                <Input placeholder="Ex: amarelo, rosa, laranja..." value={s1.corQueNaoQuer} onChange={setS1Field("corQueNaoQuer")} />
+              </FormGroup>
+            </div>
           </div>
 
           {/* Modelo de briefing */}
@@ -694,6 +1044,11 @@ export default function BriefingPage() {
       )}
 
       <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
+
+      {/* Link público — aparece após geração */}
+      {visible && !isLoading && (
+        <PublicLinkButton s1={s1} selectedRooms={selectedRooms} roomData={roomData} />
+      )}
     </div>
   );
 }
