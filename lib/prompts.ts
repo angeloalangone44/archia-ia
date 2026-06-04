@@ -33,6 +33,8 @@ export type BriefingDados = {
   tomNeutro: string;
   corQueGosta: string;
   corQueNaoQuer: string;
+  // referências visuais (links separados por \n)
+  referenciasVisuais?: string;
 };
 
 export type SpecsDados = {
@@ -112,6 +114,10 @@ Use linguagem objetiva e profissional. O relatório é para uso interno do arqui
       dados.corQueNaoQuer && `- **Cor a evitar:** ${dados.corQueNaoQuer}`,
     ].filter(Boolean).join("\n");
 
+    const referenciasBlock = dados.referenciasVisuais?.trim()
+      ? `## REFERÊNCIAS VISUAIS FORNECIDAS PELO CLIENTE:\n${dados.referenciasVisuais.split("\n").filter(Boolean).map((l) => `- ${l}`).join("\n")}\n\nMencione essas referências na seção de CONCEITO NORTEADOR como "Referências visuais fornecidas pelo cliente". Não tente acessar os links — liste-os como fornecidos e comente que o arquiteto deve consultá-los diretamente.`
+      : "";
+
     const formatoInstrucao = dados.modeloBriefing
       ? `MODELO DE BRIEFING DO ESCRITÓRIO — use como referência de estrutura, formato e tom. Reproduza o mesmo padrão substituindo pelos dados deste projeto:\n\n---\n${dados.modeloBriefing}\n---`
       : `## REGRAS DO OUTPUT:
@@ -127,6 +133,8 @@ Use linguagem objetiva e profissional. O relatório é para uso interno do arqui
     return `Gere um BRIEFING TÉCNICO DE PROJETO por ambiente, em formato de checklist de decisões confirmadas.
 
 ${formatoInstrucao}
+
+${referenciasBlock}
 
 ## INFORMAÇÕES GERAIS
 - **Tipo:** ${dados.tipoDetalhado}

@@ -59,6 +59,7 @@ export type ArchiaProjetoUnificado = {
       corQueGosta: string;
       corQueNaoQuer: string;
     };
+    referenciasVisuais: string[];
   };
   projeto: {
     tipo: string;

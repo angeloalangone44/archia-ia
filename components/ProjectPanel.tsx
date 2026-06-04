@@ -248,6 +248,20 @@ function ProjetoUnificadoDetalhe({
               </div>
             </div>
           )}
+          {projeto.cliente.referenciasVisuais?.length > 0 && (
+            <div className="mt-5 pt-4" style={{ borderTop: "0.5px solid var(--border)" }}>
+              <p className="text-[10px] uppercase tracking-wider mb-3" style={{ color: "var(--ink3)" }}>Referências visuais</p>
+              <div className="flex flex-col gap-1.5">
+                {projeto.cliente.referenciasVisuais.map((link, i) => (
+                  <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                    className="text-[12px] truncate"
+                    style={{ color: "var(--accent)", textDecoration: "none" }}>
+                    {link}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

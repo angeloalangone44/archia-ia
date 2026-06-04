@@ -25,6 +25,7 @@ export default function ClientBriefingPage() {
     corQueGosta: "",
     corQueNaoQuer: "",
     selectedRooms: [] as string[],
+    referenciasVisuais: [""],
     obsGerais: "",
   });
 
@@ -77,6 +78,7 @@ export default function ClientBriefingPage() {
       corQueGosta: f.corQueGosta,
       corQueNaoQuer: f.corQueNaoQuer,
       selectedRooms: JSON.stringify(f.selectedRooms),
+      referenciasVisuais: JSON.stringify(f.referenciasVisuais.filter((l) => l.trim() !== "")),
       obsGerais: f.obsGerais,
     };
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
@@ -305,6 +307,58 @@ export default function ClientBriefingPage() {
           </div>
 
           <hr style={{ border: "none", borderTop: "1px solid #E5E0D8", margin: "24px 0" }} />
+
+          <hr style={{ border: "none", borderTop: "1px solid #E5E0D8", margin: "24px 0" }} />
+
+          {/* Referências visuais */}
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={sectionTitle}>Referências visuais (opcional)</h2>
+            <label style={labelStyle}>Cole links de imagens ou painéis que inspiram o projeto</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {(f.referenciasVisuais.length > 0 ? f.referenciasVisuais : [""]).map((link, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="url"
+                    value={link}
+                    onChange={(e) => {
+                      const next = [...(f.referenciasVisuais.length > 0 ? f.referenciasVisuais : [""])];
+                      next[i] = e.target.value;
+                      setF((p) => ({ ...p, referenciasVisuais: next }));
+                    }}
+                    placeholder="Ex: link do Pinterest, Instagram, Google Drive..."
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                  {(f.referenciasVisuais.length > 0 ? f.referenciasVisuais : [""]).length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = f.referenciasVisuais.filter((_, idx) => idx !== i);
+                        setF((p) => ({ ...p, referenciasVisuais: next.length > 0 ? next : [""] }));
+                      }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#A0A0A0", fontSize: 18, lineHeight: 1 }}>
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {(f.referenciasVisuais.length < 10) && (
+              <button
+                type="button"
+                onClick={() => setF((p) => ({ ...p, referenciasVisuais: [...(p.referenciasVisuais.length > 0 ? p.referenciasVisuais : [""]), ""] }))}
+                style={{
+                  marginTop: 10, background: "#F5F2ED", border: "1px solid #D8D3CB",
+                  borderRadius: 10, padding: "8px 16px", fontSize: 13, color: "#4C4C4C",
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                }}>
+                + Adicionar link
+              </button>
+            )}
+            <p style={{ fontSize: 12, color: "#9B9B9B", marginTop: 8, lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif" }}>
+              Cole links de imagens, painéis do Pinterest ou pastas do Drive com referências que inspiram
+              o projeto — seu arquiteto vai usar para entender seu estilo.
+            </p>
+          </div>
 
           {/* Obs */}
           <div style={{ marginBottom: 28 }}>

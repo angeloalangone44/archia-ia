@@ -20,7 +20,7 @@ const TIPOS_PROJETO = [
   { id: "residencial-apto",  label: "Residencial", sub: "Apartamento" },
   { id: "comercial",         label: "Comercial",   sub: "Escritório / loja" },
   { id: "reforma",           label: "Reforma",     sub: "Parcial ou completa" },
-  { id: "interiores",        label: "Interiores",  sub: "Sem obra estrutural" },
+  { id: "interiores",        label: "Interiores",  sub: "Sem obra bruta" },
 ];
 
 const ROOMS = [
@@ -71,7 +71,97 @@ type Step1 = {
   tomNeutro: string;
   corQueGosta: string;
   corQueNaoQuer: string;
+  referenciasVisuais: string[];
 };
+
+/* ── campo de múltiplos links ───────────────────────────── */
+
+function MultiLinkField({
+  links,
+  onChange,
+}: {
+  links: string[];
+  onChange: (links: string[]) => void;
+}) {
+  const MAX = 10;
+  const list = links.length > 0 ? links : [""];
+
+  function setLink(i: number, val: string) {
+    const next = [...list];
+    next[i] = val;
+    onChange(next);
+  }
+
+  function addLink() {
+    if (list.length >= MAX) return;
+    onChange([...list, ""]);
+  }
+
+  function removeLink(i: number) {
+    const next = list.filter((_, idx) => idx !== i);
+    onChange(next.length > 0 ? next : [""]);
+  }
+
+  return (
+    <div>
+      <div className="flex flex-col gap-2">
+        {list.map((link, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="url"
+              value={link}
+              onChange={(e) => setLink(i, e.target.value)}
+              placeholder="Ex: link do Pinterest, Instagram, Google Drive..."
+              className="flex-1 text-[13px] px-3 py-2 rounded-lg"
+              style={{
+                border: "0.5px solid var(--border-strong)",
+                background: "var(--surface2)",
+                color: "var(--ink)",
+                fontFamily: "'DM Sans', sans-serif",
+                outline: "none",
+              }}
+            />
+            {list.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeLink(i)}
+                className="flex-shrink-0 opacity-40 hover:opacity-70 transition-opacity"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink)" }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {list.length < MAX && (
+        <button
+          type="button"
+          onClick={addLink}
+          className="mt-2 text-[12px] flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
+          style={{
+            background: "var(--surface2)",
+            border: "0.5px solid var(--border-strong)",
+            color: "var(--ink2)",
+            fontFamily: "'DM Sans', sans-serif",
+            cursor: "pointer",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Adicionar link
+        </button>
+      )}
+      <p className="text-[11px] mt-2 leading-relaxed" style={{ color: "var(--ink3)" }}>
+        Cole links de imagens, painéis do Pinterest ou pastas do Drive com referências que inspiram
+        o projeto — seu arquiteto vai usar para entender seu estilo.
+      </p>
+    </div>
+  );
+}
 
 /* ── campo de linha ─────────────────────────────────────── */
 
@@ -722,6 +812,7 @@ export default function BriefingPage() {
     orcamento: "", prazo: "", moradores: "", pet: "", obsGerais: "",
     modeloBriefing: "",
     tomNeutro: "", corQueGosta: "", corQueNaoQuer: "",
+    referenciasVisuais: [],
   });
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [roomData, setRoomData] = useState<Record<string, RoomFields>>({});
@@ -754,6 +845,7 @@ export default function BriefingPage() {
       tomNeutro: p.cliente.perfilEstetico.tomNeutro,
       corQueGosta: p.cliente.perfilEstetico.corQueGosta,
       corQueNaoQuer: p.cliente.perfilEstetico.corQueNaoQuer,
+      referenciasVisuais: p.cliente.referenciasVisuais ?? [],
     }));
     if (p.ambientesOrdem.length > 0) {
       setSelectedRooms(p.ambientesOrdem);
@@ -777,6 +869,9 @@ export default function BriefingPage() {
       corQueGosta: data.corQueGosta || prev.corQueGosta,
       corQueNaoQuer: data.corQueNaoQuer || prev.corQueNaoQuer,
       obsGerais: data.obsGerais || prev.obsGerais,
+      referenciasVisuais: data.referenciasVisuais
+        ? JSON.parse(data.referenciasVisuais) as string[]
+        : prev.referenciasVisuais,
     }));
     if (data.selectedRooms) {
       try {
@@ -800,9 +895,11 @@ export default function BriefingPage() {
 
   function handleGenerate() {
     if (selectedRooms.length === 0) { alert("Selecione pelo menos um ambiente."); return; }
+    const linksValidos = s1.referenciasVisuais.filter((l) => l.trim() !== "");
     const dados = {
       ...s1,
       ambientesDetalhados: serializeRooms(selectedRooms, roomData),
+      referenciasVisuais: linksValidos.join("\n"),
     };
     generate("briefing", dados, s1.cliente || "Briefing", (fullText) => {
       // Salva / atualiza projeto unificado
@@ -821,6 +918,7 @@ export default function BriefingPage() {
             corQueGosta: s1.corQueGosta,
             corQueNaoQuer: s1.corQueNaoQuer,
           },
+          referenciasVisuais: linksValidos,
         },
         projeto: {
           tipo: s1.tipoDetalhado,
@@ -940,6 +1038,17 @@ export default function BriefingPage() {
                 <Input placeholder="Ex: amarelo, rosa, laranja..." value={s1.corQueNaoQuer} onChange={setS1Field("corQueNaoQuer")} />
               </FormGroup>
             </div>
+          </div>
+
+          {/* Referências visuais */}
+          <div className="mt-7">
+            <SectionDivider>Referências visuais</SectionDivider>
+            <FormGroup label="Links de referência (opcional)" full>
+              <MultiLinkField
+                links={s1.referenciasVisuais}
+                onChange={(links) => setS1((prev) => ({ ...prev, referenciasVisuais: links }))}
+              />
+            </FormGroup>
           </div>
 
           {/* Modelo de briefing */}
