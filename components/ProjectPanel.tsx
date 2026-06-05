@@ -19,6 +19,7 @@ import {
   type ArchiaProjetoUnificado,
   AMBIENTE_LABELS,
 } from "@/lib/archia-project";
+import { getCalculoByProjeto, formatCurrency, type CalculoSalvo } from "@/lib/calculadora";
 import { getStageProgress } from "@/lib/stages";
 import { getNextCompromisso, TIPO_LABEL as C_TIPO_LABEL, TIPO_COLOR, relativeDay } from "@/lib/planner";
 import StageTracker from "@/components/StageTracker";
@@ -85,6 +86,11 @@ function ProjetoUnificadoDetalhe({
 }) {
   const [tab, setTab] = useState<DetalheTab>("documentos");
   const [printDoc, setPrintDoc] = useState<"briefing" | "proposta" | "especificacoes" | null>(null);
+  const [calculo, setCalculo] = useState<CalculoSalvo | null>(null);
+
+  useEffect(() => {
+    setCalculo(getCalculoByProjeto(projeto.id));
+  }, [projeto.id]);
 
   const tabs: { id: DetalheTab; label: string }[] = [
     { id: "documentos", label: "Documentos" },
@@ -200,6 +206,53 @@ function ProjetoUnificadoDetalhe({
               </div>
             );
           })}
+
+          {/* Card de precificação */}
+          <div className="rounded-2xl px-5 py-4"
+            style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                  style={{ background: "#F0EDE6", color: "#6B5A3E" }}>
+                  Precificação
+                </span>
+                {calculo && (
+                  <span className="text-[11px]" style={{ color: "var(--ink3)" }}>
+                    {new Date(calculo.data).toLocaleDateString("pt-BR")}
+                  </span>
+                )}
+              </div>
+              <Link href={`/app/calculadora?projeto=${projeto.id}`}
+                className="text-[11px] px-3 py-1.5 rounded-lg"
+                style={{ background: calculo ? "#F0EDE6" : "var(--surface2)", color: calculo ? "#6B5A3E" : "var(--ink3)", border: "0.5px solid var(--border)", textDecoration: "none", fontFamily: "'DM Sans', sans-serif" }}>
+                {calculo ? "Recalcular" : "Calcular"}
+              </Link>
+            </div>
+            {calculo ? (
+              <div className="flex items-baseline gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "var(--ink3)" }}>Honorário ideal</p>
+                  <p className="text-[16px] font-bold" style={{ color: "var(--ink)" }}>
+                    {formatCurrency(calculo.result.honorarioIdeal)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "var(--ink3)" }}>Horas estimadas</p>
+                  <p className="text-[13px]" style={{ color: "var(--ink2)" }}>
+                    {calculo.result.horasEstimadas.toFixed(0)}h
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: "var(--ink3)" }}>Mínimo</p>
+                  <p className="text-[13px]" style={{ color: "var(--ink2)" }}>
+                    {formatCurrency(calculo.result.honorarioMinimo)}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[12px]" style={{ color: "var(--ink3)" }}>Ainda não calculado</p>
+            )}
+          </div>
         </div>
       )}
 

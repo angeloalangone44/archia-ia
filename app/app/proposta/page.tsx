@@ -6,6 +6,7 @@ import DocumentForm, {
 import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   getArchiaProjects,
   getProjetosParaProposta,
@@ -96,6 +97,7 @@ function ContinuidadeBanner({
 
 export default function PropostaPage() {
   const { text, isLoading, visible, generate } = useGenerate();
+  const router = useRouter();
   const [projetoId, setProjetoId] = useState("");
 
   const [f, setF] = useState({
@@ -109,6 +111,23 @@ export default function PropostaPage() {
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) setF((prev) => ({ ...prev, estruturaPersonalizada: saved }));
+
+    // Carrega honorário sugerido pela calculadora
+    const honorario = localStorage.getItem("archia_honorario_sugerido");
+    if (honorario) {
+      try {
+        const h = JSON.parse(honorario);
+        setF((prev) => ({ ...prev, valor: h.valor || prev.valor }));
+        if (h.projetoId) setProjetoId(h.projetoId);
+        localStorage.removeItem("archia_honorario_sugerido");
+      } catch { /* ignore */ }
+    }
+
+    // URL param ?projeto=ID
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("projeto");
+    if (id) handleSelectProject(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -247,6 +266,17 @@ export default function PropostaPage() {
 
           <FormGroup label="Valor total dos honorários (R$)" required>
             <Input placeholder="Ex: R$ 45.000" value={f.valor} onChange={set("valor")} />
+            <button
+              type="button"
+              onClick={() => router.push(projetoId ? `/app/calculadora?projeto=${projetoId}` : "/app/calculadora")}
+              className="mt-1.5 text-[11px] flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
+              style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)", color: "var(--ink3)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+                <rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 8h2m2 0h4M8 12h2m2 0h4M8 16h8" strokeLinecap="round"/>
+              </svg>
+              Calcular com a calculadora
+            </button>
           </FormGroup>
           <FormGroup label="Forma de pagamento">
             <Input placeholder="Ex: 30% entrada, 40% aprovação, 30% conclusão" value={f.pagto} onChange={set("pagto")} />
