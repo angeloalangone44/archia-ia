@@ -1,139 +1,179 @@
-/* ── Etapas ─────────────────────────────────────────────── */
-
-export type EtapaCalculo = {
-  id: string;
-  label: string;
-  horasDefault: number;
-};
-
-export const ETAPAS: EtapaCalculo[] = [
-  { id: "briefing",    label: "Levantamento e briefing",   horasDefault: 8  },
-  { id: "preliminar",  label: "Estudo preliminar",         horasDefault: 16 },
-  { id: "anteprojeto", label: "Anteprojeto / 3D",          horasDefault: 24 },
-  { id: "executivo",   label: "Projeto executivo",         horasDefault: 40 },
-  { id: "assessoria",  label: "Assessoria de obra",        horasDefault: 20 },
-  { id: "compras",     label: "Gerenciamento de compras",  horasDefault: 16 },
-];
-
-/* ── Tipos de projeto ───────────────────────────────────── */
-
-export type TipoProjeto = { id: string; label: string; peso: number };
-
-export const TIPOS_PROJETO: TipoProjeto[] = [
-  { id: "interiores",   label: "Interiores sem obra",           peso: 1.0 },
-  { id: "reforma-parc", label: "Reforma parcial",               peso: 1.2 },
-  { id: "reforma-comp", label: "Reforma completa",              peso: 1.4 },
-  { id: "resid-apto",   label: "Residencial apartamento",       peso: 1.5 },
-  { id: "resid-casa",   label: "Residencial casa",              peso: 1.3 },
-  { id: "comercial",    label: "Comercial escritório / loja",   peso: 1.2 },
-];
-
-/* ── Mapeamento de tipo do briefing → tipo da calculadora ─ */
-export const BRIEFING_TIPO_MAP: Record<string, string> = {
-  "interiores":        "interiores",
-  "reforma":           "reforma-parc",
-  "residencial-apto":  "resid-apto",
-  "residencial-casa":  "resid-casa",
-  "comercial":         "comercial",
-};
-
 /* ── Complexidade ───────────────────────────────────────── */
 
-export type Complexidade = "baixa" | "media" | "alta";
+export type Complexidade = "branca" | "cinza";
 
-export const COMPLEXIDADE_MULT: Record<Complexidade, number> = {
-  baixa: 0.9,
-  media: 1.0,
-  alta:  1.25,
+export const COMPLEXIDADE: Record<Complexidade, { label: string; desc: string; mult: number }> = {
+  branca: {
+    label: "Obra branca",
+    desc:  "Apenas acabamentos e revestimentos (reforma, interiores sem estrutural)",
+    mult:  1.0,
+  },
+  cinza: {
+    label: "Obra cinza + branca",
+    desc:  "Inclui estrutural e construção — nível de detalhamento muito maior",
+    mult:  1.4,
+  },
 };
+
+/* ── Tipo de projeto ────────────────────────────────────── */
+
+export type TipoProjeto = "residencial" | "comercial";
 
 /* ── Prazo ──────────────────────────────────────────────── */
 
 export type PrazoAjuste = "normal" | "urgente" | "muito_urgente";
 
-export const PRAZO_MULT: Record<PrazoAjuste, number> = {
-  normal:        1.0,
-  urgente:       1.2,
-  muito_urgente: 1.35,
+export const PRAZO: Record<PrazoAjuste, { label: string; mult: number }> = {
+  normal:        { label: "Normal",             mult: 1.00 },
+  urgente:       { label: "Urgente +20%",       mult: 1.20 },
+  muito_urgente: { label: "Muito urgente +35%", mult: 1.35 },
 };
 
-/* ── Input / Result ─────────────────────────────────────── */
+/* ── Custos variáveis ───────────────────────────────────── */
+
+export type CustoVariavelTipo = "renders" | "visitas" | "outro";
+
+export type CustoVariavel = {
+  id: string;
+  tipo: CustoVariavelTipo;
+  descricao: string;
+  // renders
+  qtdImagens?: number;
+  valorPorImagem?: number;
+  // visitas
+  qtdVisitas?: number;
+  valorPorVisita?: number;
+  // outro / valor manual
+  valor?: number;
+};
+
+export function totalCustoVariavel(c: CustoVariavel): number {
+  if (c.tipo === "renders")  return (c.qtdImagens  ?? 0) * (c.valorPorImagem  ?? 0);
+  if (c.tipo === "visitas")  return (c.qtdVisitas  ?? 0) * (c.valorPorVisita  ?? 0);
+  return c.valor ?? 0;
+}
+
+/* ── Input ──────────────────────────────────────────────── */
+
+export type EtapaCalculo = {
+  id: string;
+  nome: string;
+  horas: number;      // horas configuradas / editadas para este projeto
+  selecionada: boolean;
+};
 
 export type CalculoInput = {
-  tipoProjeto: string;
+  tipo: TipoProjeto | "";
   metragem: string;
-  numBanheiros: string;
   complexidade: Complexidade;
-  etapas: Record<string, number>;       // id → horas (editável)
-  etapasSelecionadas: string[];
+  etapas: EtapaCalculo[];
   prazo: PrazoAjuste;
   visibilidade: boolean;
   descontoVisibilidade: number;
   margemLucro: number;
+  custosVariaveis: CustoVariavel[];
 };
 
+/* ── Resultado ──────────────────────────────────────────── */
+
 export type CalculoResult = {
-  horasEstimadas: number;
-  custoHora: number;
-  custoFixoProporcional: number;
-  custoTotal: number;
-  honorarioMinimo: number;
-  honorarioIdeal: number;
-  honorarioPremium: number;
-  ajustePrazoValor: number;
+  horasBaseTipo:          number;
+  horasEtapas:            number;
+  horasEstimadas:         number;  // média entre os dois
+  horasFinal:             number;  // × complexidade
+  custoHora:              number;
+  custoFixo:              number;
+  custoBase:              number;
+  margemValor:            number;
+  ajustePrazoValor:       number;
   descontoVisibilidadeValor: number;
+  honorarioIdeal:         number;
+  honorarioMinimo:        number;
+  honorarioPremium:       number;
+  custosVariaveisTotal:   number;
+  totalFinal:             number;   // ideal + variáveis
+  totalMinimo:            number;   // mínimo + variáveis
+  totalPremium:           number;   // premium + variáveis
 };
+
+/* ── Cálculo ────────────────────────────────────────────── */
 
 export function calcular(
   input: CalculoInput,
-  config: { valorHora: number; horasMensais: number; margemLucro: number; custosFixos: number }
-): CalculoResult | null {
-  if (!input.tipoProjeto || input.etapasSelecionadas.length === 0 || config.valorHora <= 0) {
-    return null;
+  config: {
+    valorHora: number;
+    horasMensais: number;
+    margemLucro: number;
+    custosFixos: number;
+    horasM2Residencial: number;
+    horasM2Comercial: number;
   }
+): CalculoResult | null {
+  if (!input.tipo || config.valorHora <= 0) return null;
+  const metragem = parseFloat(input.metragem);
+  if (!metragem || metragem <= 0) return null;
 
-  const tipo = TIPOS_PROJETO.find((t) => t.id === input.tipoProjeto);
-  const multTipo        = tipo?.peso ?? 1.0;
-  const multComplexidade = COMPLEXIDADE_MULT[input.complexidade] ?? 1.0;
+  const horasM2 = input.tipo === "residencial"
+    ? config.horasM2Residencial
+    : config.horasM2Comercial;
 
-  const horasBase = input.etapasSelecionadas.reduce(
-    (sum, id) => sum + (input.etapas[id] ?? 0), 0
-  );
+  const horasBaseTipo = metragem * horasM2;
 
-  const horasEstimadas = horasBase * multTipo * multComplexidade;
+  const etapasSel = input.etapas.filter((e) => e.selecionada);
+  const horasEtapas = etapasSel.reduce((s, e) => s + e.horas, 0);
 
-  const custoHora = horasEstimadas * config.valorHora;
-  const custoFixoProporcional =
-    config.horasMensais > 0 && config.custosFixos > 0
-      ? (config.custosFixos / config.horasMensais) * horasEstimadas
-      : 0;
-  const custoTotal = custoHora + custoFixoProporcional;
+  // média — se nenhuma etapa selecionada, usa só horas do tipo
+  const horasEstimadas = etapasSel.length > 0
+    ? (horasBaseTipo + horasEtapas) / 2
+    : horasBaseTipo;
 
-  const margem          = input.margemLucro / 100;
-  const prazoMult       = PRAZO_MULT[input.prazo] ?? 1.0;
-  const visibilidadeFat = input.visibilidade ? (1 - input.descontoVisibilidade / 100) : 1.0;
+  const multComplexidade = COMPLEXIDADE[input.complexidade].mult;
+  const horasFinal = horasEstimadas * multComplexidade;
 
-  const honorarioMinimo  = custoTotal;
-  const honorarioIdeal   = custoTotal * (1 + margem) * prazoMult * visibilidadeFat;
+  const custoHora = horasFinal * config.valorHora;
+  const custoFixo = config.horasMensais > 0 && config.custosFixos > 0
+    ? (config.custosFixos / config.horasMensais) * horasFinal
+    : 0;
+  const custoBase = custoHora + custoFixo;
+
+  const margem   = input.margemLucro / 100;
+  const prazoMlt = PRAZO[input.prazo].mult;
+  const visFat   = input.visibilidade ? (1 - input.descontoVisibilidade / 100) : 1;
+
+  const margemValor = custoBase * margem;
+  const preAjuste   = custoBase * (1 + margem);
+
+  const ajustePrazoValor = preAjuste * (prazoMlt - 1) * visFat;
+  const descontoVisibilidadeValor = input.visibilidade
+    ? preAjuste * prazoMlt * (1 - visFat)
+    : 0;
+
+  const honorarioIdeal   = preAjuste * prazoMlt * visFat;
+  const honorarioMinimo  = custoBase;
   const honorarioPremium = honorarioIdeal * 1.25;
 
-  const ajustePrazoValor = prazoMult > 1
-    ? custoTotal * (1 + margem) * (prazoMult - 1) * visibilidadeFat
-    : 0;
-  const descontoVisibilidadeValor = input.visibilidade && input.descontoVisibilidade > 0
-    ? custoTotal * (1 + margem) * prazoMult * (1 - visibilidadeFat)
-    : 0;
+  const custosVariaveisTotal = input.custosVariaveis.reduce(
+    (s, c) => s + totalCustoVariavel(c), 0
+  );
 
   return {
+    horasBaseTipo,
+    horasEtapas,
     horasEstimadas,
+    horasFinal,
     custoHora,
-    custoFixoProporcional,
-    custoTotal,
-    honorarioMinimo,
-    honorarioIdeal,
-    honorarioPremium,
+    custoFixo,
+    custoBase,
+    margemValor,
     ajustePrazoValor,
     descontoVisibilidadeValor,
+    honorarioIdeal,
+    honorarioMinimo,
+    honorarioPremium,
+    custosVariaveisTotal,
+    totalFinal:   honorarioIdeal   + custosVariaveisTotal,
+    totalMinimo:  honorarioMinimo  + custosVariaveisTotal,
+    totalPremium: honorarioPremium + custosVariaveisTotal,
   };
 }
 
@@ -141,15 +181,14 @@ export function calcular(
 
 export type CalculoSalvo = {
   id: string;
-  projetoId: string;   // "" se avulso
+  projetoId: string;
   nomeCliente: string;
   data: string;
   input: CalculoInput;
   result: CalculoResult;
-  honorarioFinal: number;
 };
 
-const KEY = "archia_calculos";
+const KEY = "archia_calculos_v2";
 
 export function getCalculos(): CalculoSalvo[] {
   if (typeof window === "undefined") return [];
@@ -173,8 +212,10 @@ export function getCalculoByProjeto(projetoId: string): CalculoSalvo | null {
   return getCalculos().find((c) => c.projetoId === projetoId) ?? null;
 }
 
-/* ── Formatação ─────────────────────────────────────────── */
+/* ── Utilitário ─────────────────────────────────────────── */
 
 export function formatCurrency(val: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Math.round(val));
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    Math.round(val)
+  );
 }
