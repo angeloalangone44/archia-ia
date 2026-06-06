@@ -119,7 +119,7 @@ function Hero() {
 /* ─── STATS ─────────────────────────────────────────────── */
 
 const STATS = [
-  { num: "3–4h",    label: "economizadas por projeto em documentação" },
+  { num: "< 5min",  label: "Documentação gerada por projeto" },
   { num: "4",       label: "módulos disponíveis" },
   { num: "< 5min",  label: "para gerar uma proposta completa" },
   { num: "LGPD",    label: "dados dos clientes não são armazenados" },
@@ -238,9 +238,6 @@ function Modules() {
             <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink2)" }}>
               Acompanhe o status de cada projeto — qualificação, briefing, proposta enviada, aprovado. Visibilidade do pipeline do escritório.
             </p>
-            <span className="inline-block mt-3 text-[11px] px-2.5 py-0.5 rounded-full" style={{ background: "var(--surface2)", color: "var(--ink3)", border: "0.5px solid var(--border)" }}>
-              Disponível nos planos Profissional e Escritório
-            </span>
           </div>
         </div>
 
@@ -254,7 +251,7 @@ function Modules() {
 const STEPS = [
   { n: 1, title: "Preencha o formulário",         desc: "Insira as informações do cliente e do projeto nos campos organizados. Leva menos tempo que um e-mail." },
   { n: 2, title: "A IA gera o documento",          desc: "O sistema transforma os dados em um documento estruturado, com terminologia técnica correta e formatação profissional." },
-  { n: 3, title: "Revise e use",                   desc: "O documento gerado é um rascunho de alto nível. Você revisa, ajusta o que precisar e usa — ou exporta em PDF/Word." },
+  { n: 3, title: "Revise e use",                   desc: "O documento gerado é um rascunho de alto nível. Você revisa, ajusta o que precisar e usa — ou exporta em PDF." },
   { n: 4, title: "Projeto registrado no painel",   desc: "Cada projeto fica no painel com histórico de documentos gerados e status de andamento." },
 ];
 
@@ -343,7 +340,7 @@ function Pricing() {
           </Link>
           <p className="flex items-center gap-1.5 text-xs" style={{ color: "var(--ink3)" }}>
             <span className="w-2 h-2 rounded-full" style={{ background: "#4CAF7D" }} />
-            Acesso imediato · Vagas limitadas
+            Acesso imediato · Sem cadastro
           </p>
         </div>
       </section>
@@ -414,7 +411,7 @@ function CtaFinal() {
         style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}
       >
         <span className="font-serif-display text-[15px]" style={{ color: "rgba(255,255,255,0.6)" }}>archi.ia</span>
-        <span>Piloto — versão 0.1 · Para validação de mercado</span>
+        <span>Piloto · Para validação de mercado</span>
         <span>Feito com Claude (Anthropic)</span>
       </footer>
     </div>
