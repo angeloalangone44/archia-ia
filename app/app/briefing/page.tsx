@@ -687,63 +687,60 @@ function serializeRooms(selectedRooms: string[], roomData: Record<string, RoomFi
   }).join("\n\n");
 }
 
-/* ── link público ───────────────────────────────────────── */
+/* ── botão de link para o cliente (sempre visível no header) */
 
-function PublicLinkButton({ s1, selectedRooms, roomData }: {
-  s1: Step1;
-  selectedRooms: string[];
-  roomData: Record<string, RoomFields>;
-}) {
-  const [copied, setCopied] = useState(false);
+function ClientLinkButton() {
   const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  function generateLink() {
+  function handleGenerate() {
     const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-    // Salva no localStorage os dados iniciais do formulário para referência
-    const payload = {
-      tipoDetalhado: s1.tipoDetalhado,
-      selectedRooms,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem(`archia_client_form_${token}`, JSON.stringify(payload));
-    const url = `${window.location.origin}/briefing/${token}`;
-    setLink(url);
+    localStorage.setItem(`archia_client_form_${token}`, JSON.stringify({ createdAt: new Date().toISOString() }));
+    setLink(`${window.location.origin}/briefing/${token}`);
   }
 
-  function copyLink() {
+  function handleCopy() {
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  return (
-    <div className="mt-4 rounded-xl p-4" style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
-      <p className="text-[12px] font-medium mb-3" style={{ color: "var(--ink2)" }}>Enviar formulário para o cliente</p>
-      {!link ? (
-        <button
-          type="button"
-          onClick={generateLink}
-          className="text-[12px] px-4 py-2 rounded-lg"
-          style={{ background: "var(--surface)", border: "0.5px solid var(--border-strong)", color: "var(--ink2)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
-        >
-          Gerar link para cliente
+  if (link) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl px-3 py-2 flex-shrink-0"
+        style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)", maxWidth: 320 }}>
+        <span className="text-[11px] truncate flex-1" style={{ color: "var(--ink3)", fontFamily: "monospace" }}>
+          {link}
+        </span>
+        <button onClick={handleCopy}
+          className="flex-shrink-0 text-[11px] px-2.5 py-1 rounded-lg text-white"
+          style={{ background: "var(--accent)", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          {copied ? "Copiado!" : "Copiar"}
         </button>
-      ) : (
-        <div>
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2 mb-2"
-            style={{ background: "var(--surface)", border: "0.5px solid var(--border-strong)" }}>
-            <span className="text-[11px] flex-1 truncate" style={{ color: "var(--ink3)", fontFamily: "monospace" }}>{link}</span>
-            <button onClick={copyLink} className="text-[11px] px-2 py-0.5 rounded"
-              style={{ background: "var(--accent)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-              {copied ? "Copiado!" : "Copiar"}
-            </button>
-          </div>
-          <p className="text-[11px]" style={{ color: "var(--ink3)" }}>
-            Envie este link para o cliente. Quando ele preencher, traga o link de resposta para esta página.
-          </p>
-        </div>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleGenerate}
+      className="flex-shrink-0 flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-lg transition-colors"
+      style={{
+        background: "var(--surface2)",
+        border: "0.5px solid var(--border-strong)",
+        color: "var(--ink2)",
+        fontFamily: "'DM Sans', sans-serif",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+      </svg>
+      Formulário para o cliente
+    </button>
   );
 }
 
@@ -948,11 +945,14 @@ export default function BriefingPage() {
 
   return (
     <div className="p-7 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-sm font-medium" style={{ color: "var(--ink)" }}>Briefing técnico</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--ink3)" }}>
-          Preencha por ambiente — a IA gera o briefing em formato de checklist
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-sm font-medium" style={{ color: "var(--ink)" }}>Briefing técnico</h1>
+          <p className="text-xs mt-0.5" style={{ color: "var(--ink3)" }}>
+            Preencha por ambiente — a IA gera o briefing em formato de checklist
+          </p>
+        </div>
+        <ClientLinkButton />
       </div>
 
       <ClientDataBanner onLoad={handleLoadClientData} />
@@ -1154,10 +1154,6 @@ export default function BriefingPage() {
 
       <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
 
-      {/* Link público — aparece após geração */}
-      {visible && !isLoading && (
-        <PublicLinkButton s1={s1} selectedRooms={selectedRooms} roomData={roomData} />
-      )}
     </div>
   );
 }
