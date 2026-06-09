@@ -39,3 +39,89 @@ body {
     font-family: 'DM Serif Display', serif;
   }
 }
+
+/* ── Landing animations ─────────────────────────────────── */
+
+/* Hero — runs on page load */
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.hero-anim {
+  animation: heroIn 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-anim-d1 { animation-delay:   0ms; }
+.hero-anim-d2 { animation-delay:  80ms; }
+.hero-anim-d3 { animation-delay: 160ms; }
+.hero-anim-d4 { animation-delay: 240ms; }
+.hero-anim-d5 { animation-delay: 320ms; }
+.hero-anim-d6 { animation-delay: 400ms; }
+.hero-anim-d7 { animation-delay: 480ms; }
+
+/* Scroll-triggered via IntersectionObserver */
+[data-animate] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity  600ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-animate-sm] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity  600ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-animate].is-visible,
+[data-animate-sm].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mockup sequential reveal */
+@keyframes codeReveal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.mockup-p1 { opacity: 0; }
+.mockup-p2 { opacity: 0; }
+.mockup-p3 { opacity: 0; }
+.mockup-active .mockup-p1 {
+  animation: codeReveal 400ms ease 0ms both;
+}
+.mockup-active .mockup-p2 {
+  animation: codeReveal 400ms ease 400ms both;
+}
+.mockup-active .mockup-p3 {
+  animation: codeReveal 500ms ease 700ms both;
+}
+
+/* Module card hover (CSS-only — server component) */
+.module-card {
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+.module-card:hover {
+  border-color: rgba(45, 90, 61, 0.3) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .hero-anim,
+  [data-animate],
+  [data-animate-sm] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .mockup-p1,
+  .mockup-p2,
+  .mockup-p3 {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
