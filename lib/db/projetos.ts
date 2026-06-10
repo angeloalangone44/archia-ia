@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
+import { getSessionId } from "@/lib/session";
 
 export type ProjetoSupabase = {
   id: string;
-  escritorio_id: string | null;
-  user_id: string;
+  session_id: string;
   cliente_nome: string;
   cliente_email: string | null;
   localizacao: string | null;
@@ -26,6 +26,7 @@ export async function getProjetos(): Promise<ProjetoSupabase[]> {
   const { data, error } = await supabase
     .from("projetos")
     .select("*")
+    .eq("session_id", getSessionId())
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -33,25 +34,22 @@ export async function getProjetos(): Promise<ProjetoSupabase[]> {
 
 export async function getProjetoById(id: string): Promise<ProjetoSupabase | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("projetos")
     .select("*")
     .eq("id", id)
+    .eq("session_id", getSessionId())
     .single();
-  if (error) return null;
-  return data;
+  return data ?? null;
 }
 
 export async function createProjeto(
-  projeto: Omit<ProjetoSupabase, "id" | "user_id" | "created_at" | "updated_at">
+  projeto: Omit<ProjetoSupabase, "id" | "session_id" | "created_at" | "updated_at">
 ): Promise<ProjetoSupabase> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
-
   const { data, error } = await supabase
     .from("projetos")
-    .insert({ ...projeto, user_id: user.id })
+    .insert({ ...projeto, session_id: getSessionId() })
     .select()
     .single();
   if (error) throw error;
@@ -66,12 +64,17 @@ export async function updateProjeto(
   const { error } = await supabase
     .from("projetos")
     .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("session_id", getSessionId());
   if (error) throw error;
 }
 
 export async function deleteProjeto(id: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase.from("projetos").delete().eq("id", id);
+  const { error } = await supabase
+    .from("projetos")
+    .delete()
+    .eq("id", id)
+    .eq("session_id", getSessionId());
   if (error) throw error;
 }

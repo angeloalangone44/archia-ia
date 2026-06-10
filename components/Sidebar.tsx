@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
 
 const NAV = [
   {
@@ -59,14 +58,6 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
     <aside
@@ -122,18 +113,6 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-
-      {/* Logout */}
-      <div className="px-4 pb-2">
-        <button onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-[12px] transition-colors"
-          style={{ color: "rgba(255,255,255,0.4)", background: "transparent", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4">
-            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Sair
-        </button>
-      </div>
 
       {/* LGPD */}
       <div className="p-5" style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>

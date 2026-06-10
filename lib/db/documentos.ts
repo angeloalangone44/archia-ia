@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
+import { getSessionId } from "@/lib/session";
 
 export type TipoDocumento = "briefing" | "proposta" | "specs" | "qualificacao" | "calculo";
 
 export type DocumentoSupabase = {
   id: string;
   projeto_id: string | null;
-  user_id: string;
+  session_id: string;
   tipo: TipoDocumento;
   conteudo: string;
   dados_entrada: Record<string, unknown> | null;
@@ -26,17 +27,13 @@ export async function getDocumentosByProjeto(
 }
 
 export async function saveDocumento(
-  doc: Omit<DocumentoSupabase, "id" | "user_id" | "created_at">
+  doc: Omit<DocumentoSupabase, "id" | "session_id" | "created_at">
 ): Promise<DocumentoSupabase> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
-
-  // Upsert: replace existing doc of same tipo+projeto
   const { data, error } = await supabase
     .from("documentos")
     .upsert(
-      { ...doc, user_id: user.id },
+      { ...doc, session_id: getSessionId() },
       { onConflict: "projeto_id,tipo", ignoreDuplicates: false }
     )
     .select()

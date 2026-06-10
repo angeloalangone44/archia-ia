@@ -44,7 +44,6 @@ export default function MigrationBanner() {
 
       for (const p of projetos) {
         await createProjeto({
-          escritorio_id: null,
           cliente_nome: p.cliente?.nome || p.nomeCliente || "Cliente importado",
           cliente_email: p.cliente?.email || null,
           localizacao: p.cliente?.localizacao || p.localizacao || null,

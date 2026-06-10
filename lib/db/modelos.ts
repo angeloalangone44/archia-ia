@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
+import { getSessionId } from "@/lib/session";
 
 export type TipoModelo = "briefing" | "proposta";
 
 export type ModeloEscritorio = {
   id: string;
-  user_id: string;
+  session_id: string;
   tipo: TipoModelo;
   nome: string;
   conteudo: string;
@@ -13,13 +14,10 @@ export type ModeloEscritorio = {
 
 export async function getModelo(tipo: TipoModelo): Promise<ModeloEscritorio | null> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
   const { data } = await supabase
     .from("modelos_escritorio")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("session_id", getSessionId())
     .eq("tipo", tipo)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -33,30 +31,23 @@ export async function saveModelo(
   nome = "Modelo principal"
 ): Promise<void> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
-
-  // Delete old and insert new
+  const sid = getSessionId();
   await supabase
     .from("modelos_escritorio")
     .delete()
-    .eq("user_id", user.id)
+    .eq("session_id", sid)
     .eq("tipo", tipo);
-
   const { error } = await supabase
     .from("modelos_escritorio")
-    .insert({ user_id: user.id, tipo, nome, conteudo });
+    .insert({ session_id: sid, tipo, nome, conteudo });
   if (error) throw error;
 }
 
 export async function deleteModelo(tipo: TipoModelo): Promise<void> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
   await supabase
     .from("modelos_escritorio")
     .delete()
-    .eq("user_id", user.id)
+    .eq("session_id", getSessionId())
     .eq("tipo", tipo);
 }

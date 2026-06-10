@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
+import { getSessionId } from "@/lib/session";
 
 export type TipoLink = "planta" | "referencia" | "contrato" | "orcamento" | "outro";
 
 export type LinkProjeto = {
   id: string;
   projeto_id: string;
-  user_id: string;
+  session_id: string;
   titulo: string;
   url: string;
   tipo: TipoLink;
@@ -24,15 +25,12 @@ export async function getLinksByProjeto(projetoId: string): Promise<LinkProjeto[
 }
 
 export async function addLink(
-  link: Omit<LinkProjeto, "id" | "user_id" | "created_at">
+  link: Omit<LinkProjeto, "id" | "session_id" | "created_at">
 ): Promise<LinkProjeto> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autenticado");
-
   const { data, error } = await supabase
     .from("links_projeto")
-    .insert({ ...link, user_id: user.id })
+    .insert({ ...link, session_id: getSessionId() })
     .select()
     .single();
   if (error) throw error;
