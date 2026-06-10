@@ -16,6 +16,191 @@ import {
 
 /* ── constantes ─────────────────────────────────────────── */
 
+/* ── templates de briefing ──────────────────────────────── */
+
+const BRIEFING_TEMPLATES = [
+  {
+    id: "checklist",
+    label: "Checklist técnico",
+    desc: "Por ambiente · especificações detalhadas",
+    icon: "✅",
+    color: "#2374AB",
+    bg: "#EBF5FB",
+    conteudo: `MODELO DE BRIEFING — Checklist técnico por ambiente
+
+Para cada ambiente, registre:
+• Estilo desejado (clean, clássico, moderno, rústico, industrial)
+• Revestimento de piso e paredes
+• Iluminação (direta / indireta / mista)
+• Tom de madeira preferido
+• Itens desejados (TV, lareira, bancada, etc.)
+• Mobiliário a reaproveitar
+• Mobiliário novo necessário
+• Observações específicas
+
+Inclua ao final:
+• Perfil estético do cliente (cores, referências)
+• Restrições (orçamento, prazo, condicionantes físicas)
+• Próximas etapas recomendadas
+• Especificações preliminares por ambiente (tabela de materiais)`,
+    exemplo: `# BRIEFING TÉCNICO — Apartamento 120m² · Pinheiros
+
+**Cliente:** Carlos e Ana Mendes
+**Data:** 10/06/2025
+
+## INFORMAÇÕES GERAIS
+- **Tipo:** Residencial · Apartamento
+- **Área:** 120 m²
+- **Orçamento:** R$ 350.000
+- **Prazo:** 8 meses
+
+---
+
+## SALA DE ESTAR / JANTAR
+- **Estilo:** Contemporâneo com toques orgânicos
+- **Piso:** Porcelanato 120×60 tom cinza claro
+- **Parede:** Tinta + painel ripado em nogueira na parede da TV
+- **Iluminação:** Indireta com sanca + spots direcionáveis
+- **Itens:** Lareira a etanol, adega embutida
+- **Observações:** Integrar sala com cozinha, mesa para 8 pessoas
+
+## COZINHA
+- **Estilo:** Clean, sem puxadores
+- **Bancada:** Porcelanato marmorizado
+- **Metal:** Preto fosco
+- **Eletros:** Cooktop a gás 5 bocas, forno embutido, geladeira side-by-side
+
+---
+
+## PRÓXIMAS ETAPAS
+1. Aprovação do estudo preliminar
+2. Apresentação de moodboard de materiais
+3. Início do projeto executivo`,
+  },
+  {
+    id: "resumo-executivo",
+    label: "Resumo executivo + checklist",
+    desc: "Resumo p/ o cliente · checklist p/ o arquiteto",
+    icon: "📄",
+    color: "#2D5A3D",
+    bg: "#EAF2EC",
+    conteudo: `MODELO DE BRIEFING — Resumo executivo + Checklist técnico
+
+## PARTE 1: RESUMO EXECUTIVO (para compartilhar com o cliente)
+Texto em linguagem simples resumindo o que foi acordado:
+• O que será feito
+• Estilo e conceito geral do projeto
+• Destaques e pedidos especiais do cliente
+• Próximos passos
+
+[Nota: Esta seção pode ser enviada ao cliente para validação antes de avançar]
+
+---
+
+## PARTE 2: CHECKLIST TÉCNICO (uso interno do arquiteto)
+Por ambiente, registre:
+• Decisões confirmadas de revestimento, iluminação e mobiliário
+• Itens a definir (⚠)
+• Especificações técnicas (dimensões, normas, materiais)
+• Observações de instalação
+
+Inclua ao final:
+• Especificações preliminares (tabela por ambiente)
+• Pendências e próximas etapas`,
+    exemplo: `# BRIEFING — Residência Mendes
+**Apartamento 120m² · Pinheiros, SP**
+
+---
+
+## RESUMO PARA O CLIENTE
+
+Carlos e Ana, reunimos aqui tudo que conversamos. Por favor confirme se está correto antes de avançarmos para o projeto.
+
+**O que faremos:**
+Projeto de interiores completo para o seu apartamento. O conceito é um ambiente contemporâneo com toques orgânicos — confortável para o dia a dia e elegante para receber.
+
+**Ambientes:** Sala integrada, cozinha americana, 2 quartos, 2 banheiros e varanda gourmet.
+
+**Destaques que vocês pediram:**
+- Sala integrada com cozinha aberta
+- Mesa para 8 pessoas
+- Lareira a etanol
+- Tons neutros com destaque em madeira nogueira
+
+Qualquer ajuste, me falem! ✉
+
+---
+
+## CHECKLIST TÉCNICO (uso interno)
+
+### SALA DE ESTAR / JANTAR
+- ✅ **Piso:** Porcelanato 120×60 · tom cinza claro
+- ✅ **Parede TV:** Painel ripado em nogueira
+- ✅ **Iluminação:** Indireta com sanca
+- ⚠ **Sofá:** Dimensões a definir após aprovação do layout`,
+  },
+];
+
+/* ── cards de templates de briefing ────────────────────── */
+
+function TemplatesBriefingCards({ onSelect }: { onSelect: (conteudo: string) => void }) {
+  const [preview, setPreview] = useState<typeof BRIEFING_TEMPLATES[0] | null>(null);
+  return (
+    <div className="mb-4">
+      <p className="text-[12px] mb-3" style={{ color: "var(--ink3)" }}>
+        Ou escolha um template como ponto de partida:
+      </p>
+      <div className="grid grid-cols-2 gap-2.5">
+        {BRIEFING_TEMPLATES.map((tpl) => (
+          <div key={tpl.id} className="rounded-xl p-3.5 flex flex-col gap-2.5"
+            style={{ border: `0.5px solid ${tpl.color}33`, background: tpl.bg }}>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">{tpl.icon}</span>
+              <div>
+                <p className="text-[12px] font-medium leading-tight" style={{ color: tpl.color }}>{tpl.label}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: tpl.color, opacity: 0.7 }}>{tpl.desc}</p>
+              </div>
+            </div>
+            <div className="flex gap-1.5 mt-auto">
+              <button type="button" onClick={() => onSelect(tpl.conteudo)}
+                className="flex-1 text-[11px] py-1.5 rounded-lg font-medium"
+                style={{ background: tpl.color, color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                Usar
+              </button>
+              <button type="button" onClick={() => setPreview(tpl)}
+                className="text-[11px] py-1.5 px-2.5 rounded-lg"
+                style={{ background: "transparent", border: `0.5px solid ${tpl.color}55`, color: tpl.color, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                Ver exemplo
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {preview && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={(e) => e.target === e.currentTarget && setPreview(null)}>
+          <div style={{ background: "var(--surface)", borderRadius: 16, maxWidth: 640, width: "100%", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "0.5px solid var(--border)" }}>
+              <div className="flex items-center gap-2">
+                <span>{preview.icon}</span>
+                <span className="text-[14px] font-medium" style={{ color: "var(--ink)" }}>{preview.label}</span>
+              </div>
+              <button onClick={() => setPreview(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", fontSize: 18 }}>✕</button>
+            </div>
+            <div className="overflow-y-auto p-5">
+              <p className="text-[11px] font-medium uppercase tracking-wider mb-3" style={{ color: "var(--ink3)" }}>Exemplo com dados fictícios</p>
+              <div className="rounded-xl p-5 text-[12px] leading-relaxed whitespace-pre-wrap"
+                style={{ background: preview.bg, border: `0.5px solid ${preview.color}22`, color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}>
+                {preview.exemplo}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TIPOS_PROJETO = [
   { id: "residencial-casa",  label: "Residencial", sub: "Casa" },
   { id: "residencial-apto",  label: "Residencial", sub: "Apartamento" },
@@ -1157,6 +1342,7 @@ export default function BriefingPage() {
           <div className="mt-7">
             <SectionDivider>Modelo de briefing do escritório</SectionDivider>
             <FormGroup label="Cole um briefing anterior como modelo (opcional)" full>
+              <TemplatesBriefingCards onSelect={(c) => setS1((prev) => ({ ...prev, modeloBriefing: c }))} />
               <Textarea
                 placeholder={`Cole aqui o texto de um briefing seu anterior — do Word, PDF ou e-mail. A IA vai seguir a mesma estrutura, formato e tom, substituindo pelos dados deste novo projeto.\n\nEx: "BRIEFING TÉCNICO — Residência XYZ\n\nSALA DE ESTAR\n• Estilo: Contemporâneo...\n• Piso: porcelanato 120x60..."`}
                 value={s1.modeloBriefing}

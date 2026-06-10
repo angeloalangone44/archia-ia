@@ -6,6 +6,7 @@ import {
   saveConfiguracoes,
   ETAPAS_PADRAO,
   type EtapaConfig,
+  type LogoPosicao,
 } from "@/lib/configuracoes";
 import { Input, FormGroup, SectionDivider } from "@/components/DocumentForm";
 import { getModelo, saveModelo, deleteModelo, type TipoModelo } from "@/lib/db/modelos";
@@ -277,6 +278,11 @@ export default function ConfiguracoesPage() {
   const [horasM2Com,   setHorasM2Com]   = useState("1.2");
   const [etapas,       setEtapas]       = useState(ETAPAS_PADRAO);
   const [saved,        setSaved]        = useState(false);
+  // Logo
+  const [logoBase64,   setLogoBase64]   = useState<string | undefined>(undefined);
+  const [logoPosicao,  setLogoPosicao]  = useState<LogoPosicao>("cabecalho");
+  const [logoError,    setLogoError]    = useState("");
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const c = getConfiguracoesOrDefault();
@@ -287,7 +293,22 @@ export default function ConfiguracoesPage() {
     setHorasM2Res  (String(c.horasM2Residencial ?? 1.5));
     setHorasM2Com  (String(c.horasM2Comercial   ?? 1.2));
     setEtapas      (c.etapas.length > 0 ? c.etapas : ETAPAS_PADRAO);
+    setLogoBase64  (c.logoBase64);
+    setLogoPosicao (c.logoPosicao ?? "cabecalho");
   }, []);
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError("");
+    if (file.size > 1 * 1024 * 1024) { setLogoError("Logo muito grande. Máximo 1MB."); return; }
+    const allowed = ["image/png", "image/jpeg", "image/svg+xml"];
+    if (!allowed.includes(file.type)) { setLogoError("Formato não suportado. Use PNG, JPG ou SVG."); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogoBase64(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  }
 
   function handleSave() {
     if (!valorHora) { alert("Informe o valor da sua hora."); return; }
@@ -299,6 +320,8 @@ export default function ConfiguracoesPage() {
       etapas,
       horasM2Residencial:  parseFloat(horasM2Res)   || 1.5,
       horasM2Comercial:    parseFloat(horasM2Com)   || 1.2,
+      logoBase64,
+      logoPosicao,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -405,6 +428,73 @@ export default function ConfiguracoesPage() {
             Estas configurações valem para todos os projetos futuros.
           </p>
           <EtapasEditor etapas={etapas} onChange={setEtapas} />
+        </div>
+
+        {/* Identidade visual */}
+        <div className="rounded-2xl px-5 py-4" style={{ border: "0.5px solid var(--border)", background: "var(--surface)" }}>
+          <SectionDivider>Identidade visual</SectionDivider>
+          <p className="text-[12px] mb-4 leading-relaxed" style={{ color: "var(--ink3)" }}>
+            A logo aparece nos documentos gerados (PDF). Tamanho máximo recomendado: 120px de largura.
+          </p>
+
+          {/* Upload area */}
+          <div className="flex gap-5 items-start mb-4">
+            <div className="flex-1">
+              <button type="button" onClick={() => logoInputRef.current?.click()}
+                className="w-full flex flex-col items-center justify-center gap-2 rounded-xl transition-colors hover:opacity-80"
+                style={{ border: "0.5px dashed var(--border-strong)", background: "var(--surface2)", cursor: "pointer", height: 96, fontFamily: "'DM Sans', sans-serif" }}>
+                {logoBase64 ? (
+                  <img src={logoBase64} alt="Logo preview" style={{ maxWidth: 120, maxHeight: 52, objectFit: "contain" }} />
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6" style={{ color: "var(--ink3)" }}>
+                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 10l-4-4-4 4M12 6v8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span className="text-[12px]" style={{ color: "var(--ink3)" }}>PNG, JPG ou SVG — até 1MB</span>
+                  </>
+                )}
+              </button>
+              <input ref={logoInputRef} type="file" accept=".png,.jpg,.jpeg,.svg" className="hidden" onChange={handleLogoChange} />
+              {logoError && <p className="text-[11px] mt-1.5" style={{ color: "#DC2626" }}>{logoError}</p>}
+            </div>
+
+            {/* Preview box */}
+            {logoBase64 && (
+              <div className="flex flex-col gap-2">
+                <div className="rounded-xl p-3 flex items-center justify-center"
+                  style={{ border: "0.5px solid var(--border)", background: "#fff", width: 140, height: 96 }}>
+                  <img src={logoBase64} alt="Preview" style={{ maxWidth: 120, maxHeight: 70, objectFit: "contain" }} />
+                </div>
+                <button type="button" onClick={() => setLogoBase64(undefined)}
+                  className="text-[11px] text-center transition-opacity hover:opacity-70"
+                  style={{ background: "none", border: "none", color: "#DC2626", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Remover logo
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Posição */}
+          <div>
+            <p className="text-[12px] font-medium mb-2" style={{ color: "var(--ink2)" }}>Posição no documento</p>
+            <div className="flex flex-col gap-2">
+              {[
+                { id: "cabecalho" as LogoPosicao, label: "Cabeçalho", desc: "Canto superior de cada página, discreto (padrão)" },
+                { id: "marca-dagua" as LogoPosicao, label: "Marca d'água", desc: "Centralizada atrás do texto, opacidade 8%" },
+              ].map((opt) => (
+                <label key={opt.id} className="flex items-start gap-3 cursor-pointer p-3 rounded-xl transition-colors"
+                  style={{ border: `0.5px solid ${logoPosicao === opt.id ? "var(--accent)" : "var(--border)"}`, background: logoPosicao === opt.id ? "var(--accent-light)" : "var(--surface2)" }}>
+                  <input type="radio" name="logoPosicao" value={opt.id} checked={logoPosicao === opt.id}
+                    onChange={() => setLogoPosicao(opt.id)}
+                    style={{ accentColor: "var(--accent)", marginTop: 2, cursor: "pointer", flexShrink: 0 }} />
+                  <div>
+                    <p className="text-[13px] font-medium" style={{ color: logoPosicao === opt.id ? "var(--accent)" : "var(--ink)" }}>{opt.label}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--ink3)" }}>{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Modelos do escritório */}

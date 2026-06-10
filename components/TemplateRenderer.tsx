@@ -10,6 +10,8 @@ type Props = {
   isStreaming: boolean;
   visible: boolean;
   nomeEscritorio?: string;
+  logoBase64?: string;
+  logoPosicao?: "cabecalho" | "marca-dagua";
 };
 
 type TemplateId = "classico" | "moderno" | "proximo";
@@ -236,11 +238,15 @@ function TemplateOverlay({
   text,
   tpl,
   nomeEscritorio,
+  logoBase64,
+  logoPosicao,
   onClose,
 }: {
   text: string;
   tpl: TemplateId;
   nomeEscritorio?: string;
+  logoBase64?: string;
+  logoPosicao?: "cabecalho" | "marca-dagua";
   onClose: () => void;
 }) {
   const html = renderHtml(text);
@@ -250,6 +256,9 @@ function TemplateOverlay({
     tpl === "classico" ? "archi·ia" :
     tpl === "moderno"  ? "archi.ia · documento gerado com IA" :
                          "documento gerado com archi.ia";
+
+  const showWatermark = logoBase64 && logoPosicao === "marca-dagua";
+  const showCabecalho = logoBase64 && logoPosicao !== "marca-dagua";
 
   return (
     <>
@@ -305,16 +314,30 @@ function TemplateOverlay({
           <div
             id="archia-doc"
             className={`tpl-${tpl}`}
-            style={{ width: "100%", maxWidth: 760, borderRadius: 10, boxShadow: "0 24px 80px rgba(0,0,0,0.4)" }}
+            style={{ width: "100%", maxWidth: 760, borderRadius: 10, boxShadow: "0 24px 80px rgba(0,0,0,0.4)", position: "relative", overflow: "hidden" }}
           >
+            {/* Watermark */}
+            {showWatermark && (
+              <div style={{
+                position: "absolute", inset: 0, display: "flex",
+                alignItems: "center", justifyContent: "center",
+                pointerEvents: "none", zIndex: 0,
+              }}>
+                <img src={logoBase64} alt="" style={{ maxWidth: 320, maxHeight: 320, opacity: 0.08, userSelect: "none" }} />
+              </div>
+            )}
+
             {/* Logo header */}
-            <div className="doc-logo">
-              {logoLabel}
+            <div className="doc-logo" style={{ display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 1 }}>
+              {showCabecalho
+                ? <img src={logoBase64} alt="Logo" style={{ maxWidth: 120, maxHeight: 48, objectFit: "contain" }} />
+                : logoLabel
+              }
               {nomeEscritorio && <span>{nomeEscritorio}</span>}
             </div>
 
             {/* Markdown content rendered as HTML */}
-            <div dangerouslySetInnerHTML={{ __html: html }} />
+            <div style={{ position: "relative", zIndex: 1 }} dangerouslySetInnerHTML={{ __html: html }} />
           </div>
 
         </div>
@@ -325,7 +348,7 @@ function TemplateOverlay({
 
 // ── Main component ────────────────────────────────────────────
 
-export default function TemplateRenderer({ text, isStreaming, visible, nomeEscritorio }: Props) {
+export default function TemplateRenderer({ text, isStreaming, visible, nomeEscritorio, logoBase64, logoPosicao }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<TemplateId | null>(null);
@@ -421,6 +444,8 @@ export default function TemplateRenderer({ text, isStreaming, visible, nomeEscri
           text={text}
           tpl={activeTemplate}
           nomeEscritorio={nomeEscritorio}
+          logoBase64={logoBase64}
+          logoPosicao={logoPosicao}
           onClose={() => setActiveTemplate(null)}
         />
       )}

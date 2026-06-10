@@ -6,6 +6,8 @@ export type EtapaConfig = {
   horas: number;
 };
 
+export type LogoPosicao = "cabecalho" | "marca-dagua";
+
 export type ConfiguracaoEscritorio = {
   valorHora: number;
   horasMensais: number;
@@ -14,6 +16,9 @@ export type ConfiguracaoEscritorio = {
   etapas: EtapaConfig[];
   horasM2Residencial: number;
   horasM2Comercial: number;
+  // Identidade visual
+  logoBase64?: string;
+  logoPosicao?: LogoPosicao;
 };
 
 /* ── Defaults ───────────────────────────────────────────── */
@@ -46,6 +51,8 @@ export function getConfiguracoes(): ConfiguracaoEscritorio | null {
       etapas:             parsed.etapas             ?? ETAPAS_PADRAO,
       horasM2Residencial: parsed.horasM2Residencial ?? 1.5,
       horasM2Comercial:   parsed.horasM2Comercial   ?? 1.2,
+      logoBase64:         parsed.logoBase64,
+      logoPosicao:        parsed.logoPosicao        ?? "cabecalho",
     };
   } catch {
     return null;

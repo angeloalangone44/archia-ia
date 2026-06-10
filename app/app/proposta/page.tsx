@@ -14,8 +14,270 @@ import {
   updateArchiaDocumento,
   type ArchiaProjetoUnificado,
 } from "@/lib/archia-project";
+import { getConfiguracoesOrDefault } from "@/lib/configuracoes";
 
 const STORAGE_KEY = "archia-estrutura-proposta";
+
+/* ── templates de proposta ──────────────────────────────── */
+
+const PROPOSTA_TEMPLATES = [
+  {
+    id: "formal",
+    label: "Formal e detalhado",
+    desc: "Corporativo · estruturado · completo",
+    icon: "📋",
+    color: "#2374AB",
+    bg: "#EBF5FB",
+    conteudo: `ESTRUTURA DA PROPOSTA — Formal e detalhado
+
+## 1. APRESENTAÇÃO DO ESCRITÓRIO
+Apresentação institucional, histórico e diferenciais do escritório.
+
+## 2. OBJETO DA PROPOSTA
+Identificação clara do cliente, imóvel e tipo de serviço contratado.
+
+## 3. ESCOPO DETALHADO DE SERVIÇOS
+- Levantamento e diagnóstico
+- Estudo preliminar
+- Anteprojeto
+- Projeto executivo (arquitetura + detalhamentos)
+- Projeto legal (aprovações)
+- Acompanhamento de obra
+
+## 4. EXCLUSÕES DE ESCOPO
+Projetos complementares (estrutural, hidráulico, elétrico), aprovações em condomínio, mobiliário.
+
+## 5. CRONOGRAMA ESTIMADO
+Tabela com etapas, duração e marcos de entrega.
+
+## 6. HONORÁRIOS E CONDIÇÕES DE PAGAMENTO
+Valor total, forma de pagamento, reajuste e critérios de alteração de escopo.
+
+## 7. REVISÕES INCLUÍDAS
+Número de rodadas de alteração por etapa.
+
+## 8. RESPONSABILIDADES DO CLIENTE
+Documentos a fornecer, disponibilidade para reuniões, aprovações dentro do prazo.
+
+## 9. VALIDADE DA PROPOSTA
+30 dias a partir da data de emissão.
+
+## 10. CONDIÇÕES GERAIS
+Direitos autorais, alterações de escopo, rescisão contratual.
+
+## 11. ACEITE
+Espaço para assinatura e data.`,
+    exemplo: `# PROPOSTA DE SERVIÇOS DE ARQUITETURA
+
+**Escritório:** Raupp Arquitetura
+**Cliente:** Carlos e Ana Mendes
+**Data:** 10/06/2025
+**Validade:** 30 dias
+
+## 1. APRESENTAÇÃO DO ESCRITÓRIO
+
+A Raupp Arquitetura atua há 12 anos no mercado de interiores e arquitetura residencial de alto padrão. Nosso diferencial está na gestão integrada do projeto — do briefing ao acompanhamento de obra — com uso de metodologia BIM.
+
+## 2. OBJETO DA PROPOSTA
+
+Prestação de serviços de projeto de interiores para apartamento de 120m² localizado em Pinheiros, São Paulo.
+
+## 3. ESCOPO DE SERVIÇOS
+
+- **Levantamento:** visita técnica e levantamento dimensional
+- **Estudo preliminar:** proposta de layout e conceito
+- **Anteprojeto:** definição de materiais, mobiliário e acabamentos
+- **Projeto executivo:** pranchas técnicas, detalhamentos e caderno de especificações
+
+## 4. HONORÁRIOS
+
+**Valor total:** R$ 45.000
+**Pagamento:** 30% na assinatura · 40% na aprovação do anteprojeto · 30% na entrega do executivo`,
+  },
+  {
+    id: "enxuto",
+    label: "Próximo e enxuto",
+    desc: "Caloroso · direto · pessoal",
+    icon: "💬",
+    color: "#2D5A3D",
+    bg: "#EAF2EC",
+    conteudo: `ESTRUTURA DA PROPOSTA — Próximo e enxuto
+
+Mensagem pessoal de abertura — use o nome do cliente, mencione algo específico do projeto.
+
+## O que vamos fazer juntos
+Descrição do escopo em linguagem acessível, sem jargões. Etapas explicadas de forma simples.
+
+## Investimento
+Valor total e forma de pagamento. Explique o que está incluído e o que não está, sem tabelas extensas.
+
+## Como funciona nossa parceria
+Prazo, comunicação, número de revisões, o que você precisa do cliente para o projeto andar.
+
+## Próximos passos
+O que acontece depois da assinatura. Data de início, primeira reunião, o que você vai entregar primeiro.
+
+P.S.: Pode fechar qualquer dúvida por mensagem — estou à disposição.`,
+    exemplo: `# Proposta para a reforma do apartamento de vocês
+
+Oi Carlos e Ana, tudo bem?
+
+Fiquei muito feliz com nossa conversa e já estou cheio de ideias para o apartamento de vocês. Esse texto é só para formalizar o que discutimos — mas qualquer dúvida, é só mandar mensagem.
+
+## O que vamos fazer juntos
+
+Vou cuidar de todo o projeto de interiores do apê: desde o layout e a escolha dos materiais até os detalhamentos para a obra. São 4 etapas:
+
+1. Estudo do layout e conceito visual
+2. Escolha de materiais, cores e mobiliário
+3. Projeto executivo para a obra
+4. Acompanhamento durante a reforma
+
+## Investimento
+
+**R$ 45.000** — pagos em 3 partes:
+- R$ 13.500 na assinatura
+- R$ 18.000 na aprovação do projeto
+- R$ 13.500 na entrega final
+
+## Próximos passos
+
+Assim que você assinar, agendo nossa primeira reunião de imersão. Em até 2 semanas você já terá o estudo preliminar na mão.
+
+Abraços,
+**Raupp Arquitetura**`,
+  },
+  {
+    id: "portfolio",
+    label: "Visual com portfólio",
+    desc: "Showcase · criativo · projetos anteriores",
+    icon: "🎨",
+    color: "#7B3FAD",
+    bg: "#F5EEF8",
+    conteudo: `ESTRUTURA DA PROPOSTA — Visual com portfólio
+
+## SOBRE O ESCRITÓRIO
+História, filosofia de projeto e especialidades. O que nos diferencia no mercado.
+
+## PROJETOS ANTERIORES
+[Adicione aqui links ou referências aos seus projetos — fotos, portfólio online, Instagram]
+- Projeto residencial — São Paulo, 2024
+- Projeto comercial — Rio de Janeiro, 2023
+- Reforma completa — Campinas, 2023
+
+## NOSSO PROCESSO
+Como trabalhamos do início ao fim: da conversa inicial à entrega da obra.
+
+## ESCOPO DESTE PROJETO
+O que será desenvolvido especificamente para o seu projeto.
+
+## INVESTIMENTO E CONDIÇÕES
+Honorários, forma de pagamento e validade da proposta.
+
+## VAMOS COMEÇAR?
+Call-to-action claro com próximos passos e dados de contato.`,
+    exemplo: `# Proposta — Raupp Arquitetura
+
+## Sobre nós
+
+Criamos espaços que contam histórias. Trabalhamos com projetos residenciais de alto padrão em São Paulo, focados em design autoral, materiais naturais e funcionalidade.
+
+📸 **Portfólio:** raupp.arq.br/portfolio
+📱 **Instagram:** @raupp.arq
+
+---
+
+## Projetos recentes
+
+**Residência Jardins** · São Paulo · 2024
+Apartamento 180m² com conceito wabi-sabi
+
+**Cobertura Moema** · São Paulo · 2023
+Reforma completa com jardim suspenso integrado
+
+**Casa Alto da Boa Vista** · São Paulo · 2022
+Projeto novo de 320m² com foco em biofilia
+
+---
+
+## Escopo para o seu projeto
+
+Projeto de interiores completo para o apartamento de 120m² em Pinheiros, incluindo: estudo preliminar, desenvolvimento de conceito, projeto executivo e acompanhamento de obra.
+
+## Investimento
+
+**R$ 45.000** · Validade: 30 dias
+Formas de pagamento flexíveis — conversamos!`,
+  },
+];
+
+/* ── modal de preview de template ──────────────────────── */
+
+function TemplatePreviewModal({ template, onClose }: { template: typeof PROPOSTA_TEMPLATES[0]; onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "var(--surface)", borderRadius: 16, maxWidth: 640, width: "100%", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "0.5px solid var(--border)" }}>
+          <div className="flex items-center gap-2">
+            <span>{template.icon}</span>
+            <span className="text-[14px] font-medium" style={{ color: "var(--ink)" }}>{template.label}</span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", fontSize: 18 }}>✕</button>
+        </div>
+        {/* Preview */}
+        <div className="overflow-y-auto p-5" style={{ flex: 1 }}>
+          <p className="text-[11px] font-medium uppercase tracking-wider mb-3" style={{ color: "var(--ink3)" }}>Exemplo com dados fictícios</p>
+          <div className="rounded-xl p-5 text-[12px] leading-relaxed whitespace-pre-wrap"
+            style={{ background: template.bg, border: `0.5px solid ${template.color}22`, color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}>
+            {template.exemplo}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── cards de templates ─────────────────────────────────── */
+
+function TemplatesPropostaCards({ onSelect }: { onSelect: (conteudo: string) => void }) {
+  const [preview, setPreview] = useState<typeof PROPOSTA_TEMPLATES[0] | null>(null);
+  return (
+    <div className="mb-4">
+      <p className="text-[12px] mb-3" style={{ color: "var(--ink3)" }}>
+        Ou escolha um template como ponto de partida:
+      </p>
+      <div className="grid grid-cols-3 gap-2.5">
+        {PROPOSTA_TEMPLATES.map((tpl) => (
+          <div key={tpl.id} className="rounded-xl p-3.5 flex flex-col gap-2.5"
+            style={{ border: `0.5px solid ${tpl.color}33`, background: tpl.bg, cursor: "default" }}>
+            <div className="flex items-start justify-between">
+              <span className="text-xl">{tpl.icon}</span>
+            </div>
+            <div>
+              <p className="text-[12px] font-medium leading-tight" style={{ color: tpl.color }}>{tpl.label}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: tpl.color, opacity: 0.7 }}>{tpl.desc}</p>
+            </div>
+            <div className="flex gap-1.5 mt-auto">
+              <button type="button" onClick={() => onSelect(tpl.conteudo)}
+                className="flex-1 text-[11px] py-1.5 rounded-lg font-medium"
+                style={{ background: tpl.color, color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                Usar
+              </button>
+              <button type="button" onClick={() => setPreview(tpl)}
+                className="text-[11px] py-1.5 px-2.5 rounded-lg"
+                style={{ background: "transparent", border: `0.5px solid ${tpl.color}55`, color: tpl.color, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                Ver
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {preview && <TemplatePreviewModal template={preview} onClose={() => setPreview(null)} />}
+    </div>
+  );
+}
 
 /* ── seletor de projeto ─────────────────────────────────── */
 
@@ -100,6 +362,8 @@ export default function PropostaPage() {
   const { text, isLoading, visible, generate } = useGenerate();
   const router = useRouter();
   const [projetoId, setProjetoId] = useState("");
+  const [logoBase64, setLogoBase64] = useState<string | undefined>(undefined);
+  const [logoPosicao, setLogoPosicao] = useState<"cabecalho" | "marca-dagua">("cabecalho");
 
   const [f, setF] = useState({
     cliente: "", tipo: "", escopo: "",
@@ -112,6 +376,8 @@ export default function PropostaPage() {
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) setF((prev) => ({ ...prev, estruturaPersonalizada: saved }));
+    const cfg = getConfiguracoesOrDefault();
+    if (cfg.logoBase64) { setLogoBase64(cfg.logoBase64); setLogoPosicao(cfg.logoPosicao ?? "cabecalho"); }
 
     // Carrega honorário sugerido pela calculadora
     const honorario = localStorage.getItem("archia_honorario_sugerido");
@@ -223,6 +489,7 @@ export default function PropostaPage() {
           <SectionDivider>Modelo de proposta do escritório</SectionDivider>
 
           <FormGroup label="Cole uma proposta antiga como modelo (opcional)" full>
+            <TemplatesPropostaCards onSelect={(c) => setF((prev) => ({ ...prev, estruturaPersonalizada: c }))} />
             <Textarea
               placeholder={`Cole o texto de uma proposta anterior ou descreva as seções que você costuma incluir.\n\nExemplo de estrutura:\nApresentação → Escopo → Etapas → Honorários → Aceite\n\nOu cole uma proposta completa — do Word, PDF ou e-mail. A IA segue a mesma estrutura, tom e nível de detalhe.`}
               value={f.estruturaPersonalizada}
@@ -322,7 +589,7 @@ export default function PropostaPage() {
         </FormGrid>
       </DocumentForm>
 
-      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} logoBase64={logoBase64} logoPosicao={logoPosicao} />
     </div>
   );
 }
