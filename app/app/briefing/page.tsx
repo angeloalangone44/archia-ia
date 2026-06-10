@@ -2,7 +2,7 @@
 
 import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input, Select, Textarea, FormGroup, SectionDivider } from "@/components/DocumentForm";
 import FileUploadField from "@/components/FileUploadField";
 import {
@@ -525,6 +525,146 @@ function RoomForm({ fullId, label, data, onChange }: {
   );
 }
 
+/* ── preenchimento automático (briefing) ────────────────── */
+
+type BriefingAutoFill = {
+  cliente?: string; tipoDetalhado?: string; local?: string;
+  area?: string; orcamento?: string; prazo?: string;
+  moradores?: string; obsGerais?: string;
+};
+
+function AutoFillBriefing({ onFill }: { onFill: (data: BriefingAutoFill) => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [fileName, setFileName] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const fileObjRef = useRef<File | null>(null);
+
+  async function handleExtract() {
+    if (!text.trim() && !fileObjRef.current) {
+      setErrorMsg("Cole um texto ou envie um arquivo para continuar.");
+      setStatus("error");
+      return;
+    }
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      const fd = new FormData();
+      if (text.trim()) fd.append("text", text.trim());
+      if (fileObjRef.current) fd.append("file", fileObjRef.current);
+      const res = await fetch("/api/extract-fields", { method: "POST", body: fd });
+      const json = await res.json() as { fields?: Record<string, string | null>; error?: string };
+      if (!res.ok || json.error) { setErrorMsg(json.error ?? "Erro."); setStatus("error"); return; }
+      const raw = json.fields ?? {};
+      const mapped: BriefingAutoFill = {};
+      if (raw.nome)        mapped.cliente = raw.nome;
+      if (raw.localizacao) mapped.local = raw.localizacao;
+      if (raw.metragem)    mapped.area = raw.metragem;
+      if (raw.orcamento)   mapped.orcamento = raw.orcamento;
+      if (raw.prazo)       mapped.prazo = raw.prazo;
+      if (raw.descricao)   mapped.obsGerais = raw.descricao;
+      if (raw.tipo_projeto) {
+        const tp = raw.tipo_projeto.toLowerCase();
+        if (tp.includes("residencial")) mapped.tipoDetalhado = tp.includes("casa") ? "residencial-casa" : "residencial-apto";
+        else if (tp.includes("comercial")) mapped.tipoDetalhado = "comercial";
+        else if (tp.includes("reforma")) mapped.tipoDetalhado = "reforma";
+        else if (tp.includes("interior")) mapped.tipoDetalhado = "interiores";
+      }
+      if (Object.keys(mapped).length === 0) {
+        setErrorMsg("Não conseguimos extrair informações — preencha manualmente.");
+        setStatus("error"); return;
+      }
+      onFill(mapped);
+      setStatus("success");
+    } catch {
+      setErrorMsg("Não conseguimos extrair informações — preencha manualmente.");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="mb-6 rounded-2xl overflow-hidden" style={{ border: "0.5px solid var(--border-strong)" }}>
+      <button type="button" onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors hover:opacity-80"
+        style={{ background: "var(--surface2)" }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[13px]">⚡</span>
+          <span className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>Preenchimento automático</span>
+          <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: "var(--surface)", color: "var(--ink3)", border: "0.5px solid var(--border)" }}>opcional</span>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 transition-transform"
+          style={{ color: "var(--ink3)", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+          <path d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="px-5 pb-5 pt-4" style={{ background: "var(--surface)" }}>
+          <p className="text-[12px] mb-4" style={{ color: "var(--ink3)" }}>
+            Cole a mensagem do cliente ou envie um print — a IA preenche nome, tipo, localização, área, orçamento e prazo automaticamente
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[11px] font-medium mb-1.5" style={{ color: "var(--ink3)" }}>Mensagem ou texto</p>
+              <textarea value={text} onChange={(e) => { setText(e.target.value); setStatus("idle"); }}
+                placeholder={"Cole aqui a mensagem do WhatsApp, e-mail ou descrição que o cliente enviou..."}
+                className="w-full text-[12px] px-3 py-2.5 rounded-xl resize-none" rows={5}
+                style={{ border: "0.5px solid var(--border-strong)", background: "var(--surface2)", color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", outline: "none" }} />
+            </div>
+            <div>
+              <p className="text-[11px] font-medium mb-1.5" style={{ color: "var(--ink3)" }}>Ou envie um print/documento</p>
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="w-full flex flex-col items-center justify-center gap-2 rounded-xl transition-colors hover:opacity-80"
+                style={{ border: "0.5px dashed var(--border-strong)", background: "var(--surface2)", cursor: "pointer", height: 116, fontFamily: "'DM Sans', sans-serif" }}>
+                {fileName ? (
+                  <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5" style={{ color: "var(--accent)" }}><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span className="text-[11px] text-center px-2 break-all" style={{ color: "var(--ink2)" }}>{fileName}</span>
+                  <span className="text-[10px]" style={{ color: "var(--ink3)" }}>Clique para trocar</span></>
+                ) : (
+                  <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6" style={{ color: "var(--ink3)" }}><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span className="text-[12px]" style={{ color: "var(--ink3)" }}>JPG, PNG ou PDF</span>
+                  <span className="text-[10px]" style={{ color: "var(--ink3)" }}>até 5MB</span></>
+                )}
+              </button>
+              <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f && f.size <= 5*1024*1024) { fileObjRef.current = f; setFileName(f.name); setStatus("idle"); } }} />
+            </div>
+          </div>
+          {status === "error" && (
+            <div className="mt-3 flex items-center gap-2 text-[12px] px-3 py-2 rounded-xl"
+              style={{ background: "#FDEDEC", color: "#C0392B", border: "0.5px solid #F5B7B1" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+              {errorMsg}
+            </div>
+          )}
+          {status === "success" && (
+            <div className="mt-3 flex items-center gap-2 text-[12px] px-3 py-2 rounded-xl"
+              style={{ background: "#EAF2EC", color: "#2D5A3D", border: "0.5px solid #A8D5B2" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 flex-shrink-0"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Campos preenchidos automaticamente — revise antes de continuar
+            </div>
+          )}
+          <div className="mt-4 flex items-center justify-between">
+            <button type="button" onClick={handleExtract} disabled={status === "loading"}
+              className="flex items-center gap-2 text-[13px] px-4 py-2 rounded-xl text-white"
+              style={{ background: "var(--accent)", border: "none", cursor: status === "loading" ? "not-allowed" : "pointer", opacity: status === "loading" ? 0.6 : 1, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+              {status === "loading" ? (
+                <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />Processando...</>
+              ) : (
+                <><span>⚡</span>Preencher campos automaticamente</>
+              )}
+            </button>
+          </div>
+          <p className="text-[10px] mt-3 leading-relaxed" style={{ color: "var(--ink3)" }}>
+            O conteúdo colado ou enviado é processado para extração e não é armazenado. Pode conter dados pessoais do cliente — use com discrição.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── stepper ─────────────────────────────────────────────── */
 
 function Stepper({ step }: { step: number }) {
@@ -927,6 +1067,19 @@ export default function BriefingPage() {
       {/* ── PASSO 1 ─────────────────────────────────── */}
       {step === 1 && (
         <div>
+          <AutoFillBriefing onFill={(data) => {
+            setS1((prev) => ({
+              ...prev,
+              ...(data.cliente       ? { cliente:       data.cliente }       : {}),
+              ...(data.tipoDetalhado ? { tipoDetalhado: data.tipoDetalhado } : {}),
+              ...(data.local         ? { local:         data.local }         : {}),
+              ...(data.area          ? { area:          data.area }          : {}),
+              ...(data.orcamento     ? { orcamento:     data.orcamento }     : {}),
+              ...(data.prazo         ? { prazo:         data.prazo }         : {}),
+              ...(data.moradores     ? { moradores:     data.moradores }     : {}),
+              ...(data.obsGerais     ? { obsGerais:     data.obsGerais }     : {}),
+            }));
+          }} />
           <p className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: "var(--ink3)" }}>Tipo de projeto</p>
           <div className="grid grid-cols-5 gap-2 mb-7">
             {TIPOS_PROJETO.map((t) => {

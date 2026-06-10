@@ -22,7 +22,7 @@ export function FormGroup({
   full,
   children,
 }: {
-  label: string;
+  label: ReactNode;
   required?: boolean;
   full?: boolean;
   children: ReactNode;
@@ -71,13 +71,13 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={inputClass}
-      style={inputStyle}
+      style={{ ...inputStyle, ...props.style }}
       onFocus={(e) => {
         e.currentTarget.style.borderColor = "var(--accent)";
         props.onFocus?.(e);
       }}
       onBlur={(e) => {
-        e.currentTarget.style.borderColor = "rgba(26,24,20,0.18)";
+        e.currentTarget.style.borderColor = (props.style as React.CSSProperties | undefined)?.borderColor ?? "rgba(26,24,20,0.18)";
         props.onBlur?.(e);
       }}
     />
@@ -89,13 +89,13 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       {...props}
       className={inputClass + " cursor-pointer appearance-none"}
-      style={inputStyle}
+      style={{ ...inputStyle, ...props.style }}
       onFocus={(e) => {
         e.currentTarget.style.borderColor = "var(--accent)";
         props.onFocus?.(e);
       }}
       onBlur={(e) => {
-        e.currentTarget.style.borderColor = "rgba(26,24,20,0.18)";
+        e.currentTarget.style.borderColor = (props.style as React.CSSProperties | undefined)?.borderColor ?? "rgba(26,24,20,0.18)";
         props.onBlur?.(e);
       }}
     />
@@ -107,13 +107,13 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
     <textarea
       {...props}
       className={inputClass}
-      style={{ ...inputStyle, minHeight: 80 }}
+      style={{ ...inputStyle, minHeight: 80, ...props.style }}
       onFocus={(e) => {
         e.currentTarget.style.borderColor = "var(--accent)";
         props.onFocus?.(e);
       }}
       onBlur={(e) => {
-        e.currentTarget.style.borderColor = "rgba(26,24,20,0.18)";
+        e.currentTarget.style.borderColor = (props.style as React.CSSProperties | undefined)?.borderColor ?? "rgba(26,24,20,0.18)";
         props.onBlur?.(e);
       }}
     />
