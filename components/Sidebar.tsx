@@ -5,6 +5,16 @@ import { usePathname } from "next/navigation";
 
 const NAV = [
   {
+    section: "",
+    items: [
+      {
+        href: "/app",
+        label: "Início",
+        icon: <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />,
+      },
+    ],
+  },
+  {
     section: "Documentos",
     items: [
       {
@@ -38,7 +48,7 @@ const NAV = [
     section: "Gestão",
     items: [
       {
-        href: "/app",
+        href: "/app/projetos",
         label: "Projetos",
         icon: <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />,
       },
@@ -65,22 +75,27 @@ export default function Sidebar() {
       className="flex flex-col h-screen"
     >
       {/* Logo */}
-      <div className="px-5 py-6" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
-        <div className="text-white text-xl tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
-          archi.ia
+      <Link href="/app" style={{ textDecoration: "none" }}>
+        <div className="px-5 py-6 transition-opacity hover:opacity-80" style={{ borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
+          <div className="text-white text-xl tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+            archi.ia
+          </div>
+          <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Assistente para arquitetos
+          </div>
         </div>
-        <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-          Assistente para arquitetos
-        </div>
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 py-2 overflow-y-auto">
         {NAV.map((group) => (
-          <div key={group.section}>
-            <div className="px-5 pt-4 pb-1.5 text-[10px] uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
-              {group.section}
-            </div>
+          <div key={group.section || "__home__"}>
+            {group.section && (
+              <div className="px-5 pt-4 pb-1.5 text-[10px] uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.3)" }}>
+                {group.section}
+              </div>
+            )}
+            {!group.section && <div className="pt-2" />}
             <ul className="px-2.5 space-y-0.5">
               {group.items.map((item) => {
                 const active = item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
