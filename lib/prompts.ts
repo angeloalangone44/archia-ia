@@ -141,7 +141,7 @@ ${referenciasBlock}
 - **Cliente:** ${dados.cliente}
 - **Localização:** ${dados.local}
 - **Área estimada:** ${dados.area}
-- **Orçamento:** ${dados.orcamento}
+- **Orçamento:** ${dados.orcamento || "Não informado"} (use exatamente o valor informado pelo cliente, sem enquadrar em faixas)
 - **Prazo:** ${dados.prazo}
 - **Moradores:** ${dados.moradores}
 - **Pet:** ${dados.pet}

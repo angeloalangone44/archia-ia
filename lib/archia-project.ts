@@ -2,6 +2,8 @@
 // Stores complete client + project + ambiente + document data
 
 export type AmbienteData = {
+  nome?: string;       // display name for multi-instance rooms (e.g. "Suíte master")
+  tipoQuarto?: string; // for quarto instances: Casal / Kids / Hóspedes / Suíte
   estilo: string;
   paredeRevestimento: string;
   pisoRevestimento: string;
@@ -156,8 +158,10 @@ export function updateAmbienteValorEstimado(
   saveArchiaProject(projeto);
 }
 
-export function emptyAmbiente(): AmbienteData {
+export function emptyAmbiente(nome?: string): AmbienteData {
   return {
+    nome: nome ?? "",
+    tipoQuarto: "",
     estilo: "", paredeRevestimento: "", pisoRevestimento: "",
     iluminacao: "", madeira: "", itens: [],
     aproveitarMoveis: "", aproveitarMoveisDetalhe: "",
@@ -176,8 +180,9 @@ export function emptyAmbiente(): AmbienteData {
 export const AMBIENTE_LABELS: Record<string, string> = {
   "sala":         "Sala de estar / jantar",
   "cozinha":      "Cozinha",
-  "quarto-casal": "Quarto casal",
-  "quarto-kids":  "Quarto kids",
+  "quarto":       "Quarto",
+  "quarto-casal": "Quarto casal",   // legado
+  "quarto-kids":  "Quarto kids",    // legado
   "banheiro":     "Banheiro",
   "lavabo":       "Lavabo",
   "closet":       "Closet",
@@ -185,3 +190,16 @@ export const AMBIENTE_LABELS: Record<string, string> = {
   "varanda":      "Varanda / área gourmet",
   "home-office":  "Home office",
 };
+
+export function getAmbienteLabel(id: string, data?: AmbienteData): string {
+  // For indexed rooms like "quarto_0" → use stored nome or fallback
+  const match = id.match(/^([a-z-]+)_(\d+)$/);
+  if (match) {
+    const base = match[1];
+    const idx = parseInt(match[2], 10);
+    if (data?.nome) return data.nome;
+    const baseLabel = AMBIENTE_LABELS[base] ?? base;
+    return `${baseLabel} ${idx + 1}`;
+  }
+  return AMBIENTE_LABELS[id] ?? id;
+}
