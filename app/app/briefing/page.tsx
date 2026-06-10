@@ -4,6 +4,7 @@ import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
 import { Input, Select, Textarea, FormGroup, SectionDivider } from "@/components/DocumentForm";
+import FileUploadField from "@/components/FileUploadField";
 import {
   getArchiaProjects,
   saveArchiaProject,
@@ -1060,6 +1061,9 @@ export default function BriefingPage() {
                 value={s1.modeloBriefing}
                 onChange={setS1Field("modeloBriefing")}
                 style={{ minHeight: 140 }}
+              />
+              <FileUploadField
+                onExtracted={(text) => setS1((prev) => ({ ...prev, modeloBriefing: text }))}
               />
               <p className="text-[11px] mt-1.5 flex items-center gap-1" style={{ color: "var(--ink3)" }}>
                 <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3 flex-shrink-0" style={{ color: "var(--accent)" }}>

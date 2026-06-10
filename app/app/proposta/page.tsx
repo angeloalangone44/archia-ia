@@ -3,6 +3,7 @@
 import DocumentForm, {
   FormGrid, FormGroup, Input, Select, Textarea, SectionDivider,
 } from "@/components/DocumentForm";
+import FileUploadField from "@/components/FileUploadField";
 import TemplateRenderer from "@/components/TemplateRenderer";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
@@ -227,6 +228,9 @@ export default function PropostaPage() {
               value={f.estruturaPersonalizada}
               onChange={set("estruturaPersonalizada")}
               style={{ minHeight: 160 }}
+            />
+            <FileUploadField
+              onExtracted={(text) => setF((prev) => ({ ...prev, estruturaPersonalizada: text }))}
             />
             <p className="text-[11px] mt-1.5 flex items-center gap-1" style={{ color: "var(--ink3)" }}>
               <svg viewBox="0 0 16 16" fill="none" className="w-3 h-3 flex-shrink-0" style={{ color: "var(--accent)" }}>
