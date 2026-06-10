@@ -510,7 +510,7 @@ export default function ConfiguracoesPage() {
           <p className="text-[12px] mb-4 leading-relaxed" style={{ color: "var(--ink3)" }}>
             Escolha a aparência visual dos PDFs gerados — proposta e briefing.
           </p>
-          <div className="grid grid-cols-5 gap-2">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
             {PDF_THEMES.map((tema) => (
               <TemaCard key={tema.id} tema={tema}
                 selected={temaDocumento === tema.id}

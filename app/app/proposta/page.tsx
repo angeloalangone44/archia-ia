@@ -4,7 +4,8 @@ import DocumentForm, {
   FormGrid, FormGroup, Input, Select, Textarea, SectionDivider,
 } from "@/components/DocumentForm";
 import FileUploadField from "@/components/FileUploadField";
-import TemplateRenderer from "@/components/TemplateRenderer";
+import TemplateRenderer, { TemaPickerCompact } from "@/components/TemplateRenderer";
+import type { TemaDocumento } from "@/lib/pdf-themes";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -364,7 +365,7 @@ export default function PropostaPage() {
   const [projetoId, setProjetoId] = useState("");
   const [logoBase64, setLogoBase64] = useState<string | undefined>(undefined);
   const [logoPosicao, setLogoPosicao] = useState<"cabecalho" | "marca-dagua">("cabecalho");
-  const [temaDocumento, setTemaDocumento] = useState<import("@/lib/pdf-themes").TemaDocumento>("classico");
+  const [temaDocumento, setTemaDocumento] = useState<TemaDocumento>("classico");
 
   const [f, setF] = useState({
     cliente: "", tipo: "", escopo: "",
@@ -454,6 +455,8 @@ export default function PropostaPage() {
 
       <ContinuidadeBanner onCarregar={handleCarregarBriefing} />
       <ProjectSelector projetoId={projetoId} onChange={handleSelectProject} />
+
+      <TemaPickerCompact selected={temaDocumento} onChange={setTemaDocumento} />
 
       <DocumentForm onSubmit={handleSubmit} isLoading={isLoading} buttonLabel="Gerar proposta comercial">
         <FormGrid>
@@ -591,7 +594,7 @@ export default function PropostaPage() {
         </FormGrid>
       </DocumentForm>
 
-      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} logoBase64={logoBase64} logoPosicao={logoPosicao} temaDocumento={temaDocumento} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} logoBase64={logoBase64} logoPosicao={logoPosicao} temaDocumento={temaDocumento} onTemaChange={setTemaDocumento} />
     </div>
   );
 }

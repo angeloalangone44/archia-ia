@@ -14,6 +14,7 @@ type Props = {
   logoBase64?: string;
   logoPosicao?: "cabecalho" | "marca-dagua";
   temaDocumento?: TemaDocumento;
+  onTemaChange?: (id: TemaDocumento) => void;
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -26,13 +27,18 @@ function renderHtml(text: string): string {
   return String(marked.parse(sanitize(text)));
 }
 
-// ── CSS de impressão ──────────────────────────────────────────
+// ── CSS de impressão (com forçar cores) ───────────────────────
 
 const PRINT_CSS = `
 @media print {
   @page { margin: 1.5cm 2cm; size: A4 portrait; }
   body * { visibility: hidden !important; }
   #archia-doc, #archia-doc * { visibility: visible !important; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
   #archia-doc {
     position: fixed !important;
     top: 0 !important; left: 0 !important;
@@ -80,6 +86,7 @@ function DocumentOverlay({
   logoBase64,
   logoPosicao,
   onClose,
+  onTemaChange,
 }: {
   text: string;
   temaId: TemaDocumento;
@@ -87,11 +94,18 @@ function DocumentOverlay({
   logoBase64?: string;
   logoPosicao?: "cabecalho" | "marca-dagua";
   onClose: () => void;
+  onTemaChange?: (id: TemaDocumento) => void;
 }) {
-  const tema = getTema(temaId);
+  const [activeTema, setActiveTema] = useState<TemaDocumento>(temaId);
+  const tema = getTema(activeTema);
   const html = renderHtml(text);
   const showWatermark = logoBase64 && logoPosicao === "marca-dagua";
   const showCabecalho = logoBase64 && logoPosicao !== "marca-dagua";
+
+  function handleTemaChange(id: TemaDocumento) {
+    setActiveTema(id);
+    onTemaChange?.(id);
+  }
 
   return (
     <>
@@ -127,8 +141,26 @@ function DocumentOverlay({
             </div>
           </div>
 
+          {/* Tema switcher rápido no overlay */}
+          <div className="doc-controls" style={{ width: "100%", maxWidth: 760, marginBottom: 12 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {PDF_THEMES.map((t) => (
+                <button key={t.id} type="button" onClick={() => handleTemaChange(t.id)}
+                  style={{
+                    padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+                    background: activeTema === t.id ? t.preview.accent : "rgba(255,255,255,0.12)",
+                    color: activeTema === t.id ? "#fff" : "rgba(255,255,255,0.7)",
+                    border: activeTema === t.id ? `1.5px solid ${t.preview.accent}` : "1px solid rgba(255,255,255,0.2)",
+                  }}>
+                  {t.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Document */}
-          <div id="archia-doc" className={`tpl-${temaId}`}
+          <div id="archia-doc" className={`tpl-${activeTema}`}
             style={{ width: "100%", maxWidth: 760, borderRadius: 10, boxShadow: "0 24px 80px rgba(0,0,0,0.4)", position: "relative", overflow: "hidden" }}>
 
             {showWatermark && (
@@ -153,12 +185,11 @@ function DocumentOverlay({
   );
 }
 
-// ── Preview miniatura de tema ─────────────────────────────────
+// ── Preview modal de tema ─────────────────────────────────────
 
 function TemaPreviewModal({ temaId, onClose }: { temaId: TemaDocumento; onClose: () => void }) {
   const tema = getTema(temaId);
   const html = renderHtml(PREVIEW_MD);
-  const showWatermark = false;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
@@ -181,15 +212,49 @@ function TemaPreviewModal({ temaId, onClose }: { temaId: TemaDocumento; onClose:
   );
 }
 
-// ── Card de tema ──────────────────────────────────────────────
+// ── Card de tema (usado em grade e compacto) ──────────────────
 
-function TemaCard({ tema, selected, onSelect, onPreview }: {
+function TemaCard({ tema, selected, onSelect, onPreview, compact = false }: {
   tema: typeof PDF_THEMES[0];
   selected: boolean;
   onSelect: () => void;
   onPreview: () => void;
+  compact?: boolean;
 }) {
   const p = tema.preview;
+  if (compact) {
+    return (
+      <button type="button" onClick={onSelect}
+        title={tema.nome}
+        style={{
+          flexShrink: 0,
+          width: 52,
+          border: selected ? `2px solid var(--accent)` : "1.5px solid var(--border-strong)",
+          borderRadius: 10,
+          overflow: "hidden",
+          cursor: "pointer",
+          background: selected ? "var(--accent-light)" : "var(--surface)",
+          padding: 0,
+          outline: "none",
+          transition: "all 0.15s",
+        }}>
+        {/* Mini swatch */}
+        <div style={{ background: p.bg, height: 36, padding: "5px 6px", borderBottom: `1px solid ${p.border}` }}>
+          <div style={{ height: 2.5, width: "55%", background: p.accent, borderRadius: 2, marginBottom: 4 }} />
+          {[80, 65].map((w, i) => (
+            <div key={i} style={{ height: 1.5, width: `${w}%`, background: p.body, borderRadius: 1, marginBottom: 2.5, opacity: 0.35 }} />
+          ))}
+        </div>
+        {/* Name chip */}
+        <div style={{ padding: "3px 4px", textAlign: "center" }}>
+          <p style={{ fontSize: 9, fontWeight: selected ? 600 : 400, color: selected ? "var(--accent)" : "var(--ink3)", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {tema.nome.split(" ")[0]}
+          </p>
+        </div>
+      </button>
+    );
+  }
+
   return (
     <div
       className="rounded-xl overflow-hidden transition-all cursor-pointer"
@@ -201,11 +266,8 @@ function TemaCard({ tema, selected, onSelect, onPreview }: {
     >
       {/* Miniatura */}
       <div style={{ background: p.bg, padding: "10px 12px", height: 80, overflow: "hidden", borderBottom: `1px solid ${p.border}` }}>
-        {/* Header bar */}
         <div style={{ height: 3, width: "50%", background: p.accent, borderRadius: 2, marginBottom: 7 }} />
-        {/* Title line */}
         <div style={{ height: 2, width: "70%", background: p.heading, borderRadius: 1, marginBottom: 5, opacity: 0.7 }} />
-        {/* Body lines */}
         {[90, 75, 85, 60].map((w, i) => (
           <div key={i} style={{ height: 1.5, width: `${w}%`, background: p.body, borderRadius: 1, marginBottom: 3.5, opacity: 0.35 }} />
         ))}
@@ -235,7 +297,37 @@ function TemaCard({ tema, selected, onSelect, onPreview }: {
   );
 }
 
-// ── Picker inline de tema (usado no TemplateRenderer) ─────────
+// ── Picker compacto — horizontal scroll (topo dos formulários) ─
+
+function TemaPickerCompact({ selected, onChange, label = "Tema do documento" }: {
+  selected: TemaDocumento;
+  onChange: (id: TemaDocumento) => void;
+  label?: string;
+}) {
+  const [preview, setPreview] = useState<TemaDocumento | null>(null);
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2.5">
+        <p className="text-[11px] font-medium uppercase tracking-widest" style={{ color: "var(--ink3)" }}>
+          {label}
+        </p>
+        <span className="text-[11px]" style={{ color: "var(--ink3)" }}>
+          {getTema(selected).nome}
+        </span>
+      </div>
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+        {PDF_THEMES.map((tema) => (
+          <TemaCard key={tema.id} tema={tema} selected={selected === tema.id} compact
+            onSelect={() => onChange(tema.id)}
+            onPreview={() => setPreview(tema.id)} />
+        ))}
+      </div>
+      {preview && <TemaPreviewModal temaId={preview} onClose={() => setPreview(null)} />}
+    </div>
+  );
+}
+
+// ── Picker grade completa (usado em Configurações e output) ───
 
 function TemaPickerInline({ selected, onChange }: { selected: TemaDocumento; onChange: (id: TemaDocumento) => void }) {
   const [preview, setPreview] = useState<TemaDocumento | null>(null);
@@ -244,7 +336,7 @@ function TemaPickerInline({ selected, onChange }: { selected: TemaDocumento; onC
       <p className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: "var(--ink3)" }}>
         Visualizar com tema
       </p>
-      <div className="grid grid-cols-5 gap-2">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
         {PDF_THEMES.map((tema) => (
           <TemaCard key={tema.id} tema={tema} selected={selected === tema.id}
             onSelect={() => onChange(tema.id)}
@@ -256,19 +348,18 @@ function TemaPickerInline({ selected, onChange }: { selected: TemaDocumento; onC
   );
 }
 
-// ── Exporta o picker de temas para uso em configurações ───────
+// ── Exports ───────────────────────────────────────────────────
 
-export { TemaCard, TemaPickerInline, TemaPreviewModal };
+export { TemaCard, TemaPickerInline, TemaPickerCompact, TemaPreviewModal };
 
 // ── Main component ────────────────────────────────────────────
 
-export default function TemplateRenderer({ text, isStreaming, visible, nomeEscritorio, logoBase64, logoPosicao, temaDocumento }: Props) {
+export default function TemplateRenderer({ text, isStreaming, visible, nomeEscritorio, logoBase64, logoPosicao, temaDocumento, onTemaChange }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState(false);
   const [selectedTema, setSelectedTema] = useState<TemaDocumento>(temaDocumento ?? "classico");
 
-  // Sync when prop changes (e.g. loaded from config)
   useEffect(() => {
     if (temaDocumento) setSelectedTema(temaDocumento);
   }, [temaDocumento]);
@@ -278,6 +369,11 @@ export default function TemplateRenderer({ text, isStreaming, visible, nomeEscri
   }, [text]);
 
   if (!visible) return null;
+
+  function handleTemaChange(id: TemaDocumento) {
+    setSelectedTema(id);
+    onTemaChange?.(id);
+  }
 
   async function handleCopy() {
     await navigator.clipboard.writeText(sanitize(text));
@@ -314,10 +410,10 @@ export default function TemplateRenderer({ text, isStreaming, visible, nomeEscri
         </div>
       </div>
 
-      {/* ── Tema picker + botão visualizar ─────────────── */}
+      {/* ── Tema picker (grade compacta) + botão visualizar ─ */}
       {!isStreaming && text && (
         <>
-          <TemaPickerInline selected={selectedTema} onChange={setSelectedTema} />
+          <TemaPickerInline selected={selectedTema} onChange={handleTemaChange} />
 
           <button
             type="button"
@@ -340,6 +436,7 @@ export default function TemplateRenderer({ text, isStreaming, visible, nomeEscri
           nomeEscritorio={nomeEscritorio}
           logoBase64={logoBase64}
           logoPosicao={logoPosicao}
+          onTemaChange={handleTemaChange}
           onClose={() => setActiveOverlay(false)}
         />
       )}

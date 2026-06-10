@@ -1,4 +1,4 @@
-export type TemaDocumento = "classico" | "minimalista" | "terracota" | "azul" | "salvia";
+export type TemaDocumento = "classico" | "minimalista" | "terracota" | "azul" | "salvia" | "carvao" | "rose";
 
 export type TemaConfig = {
   id: TemaDocumento;
@@ -313,6 +313,129 @@ export const PDF_THEMES: TemaConfig[] = [
 #archia-doc.tpl-salvia blockquote {
   border-left: 3px solid #7C9070; padding-left: 16px;
   color: #6A8064; font-style: italic; margin: 12px 0;
+}`,
+  },
+
+  {
+    id: "carvao",
+    nome: "Carvão e dourado",
+    desc: "Serif · branco · acento ouro",
+    preview: { bg: "#FFFFFF", border: "#E0D8C8", heading: "#2A2A2A", body: "#3A3A3A", accent: "#B8923A" },
+    css: `
+#archia-doc.tpl-carvao {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: #FFFFFF;
+  color: #2A2A2A;
+  padding: 56px 72px;
+}
+#archia-doc.tpl-carvao .doc-logo {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #B8923A;
+  border-bottom: 2px solid #2A2A2A;
+  padding-bottom: 14px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#archia-doc.tpl-carvao .doc-logo span {
+  display: inline;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8A7A5A;
+  margin-left: 6px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 400;
+}
+#archia-doc.tpl-carvao h1, #archia-doc.tpl-carvao h2 {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: #2A2A2A; margin: 28px 0 10px;
+  padding-top: 20px;
+  border-top: 1px solid #2A2A2A;
+}
+#archia-doc.tpl-carvao h3 {
+  font-size: 13px; font-weight: 600; color: #B8923A;
+  margin: 16px 0 6px;
+}
+#archia-doc.tpl-carvao p {
+  font-size: 13px; line-height: 1.85; color: #3A3A3A; margin: 8px 0;
+}
+#archia-doc.tpl-carvao ul, #archia-doc.tpl-carvao ol {
+  padding-left: 20px; margin: 8px 0;
+}
+#archia-doc.tpl-carvao li {
+  font-size: 13px; line-height: 1.75; color: #3A3A3A; margin: 4px 0;
+}
+#archia-doc.tpl-carvao strong { font-weight: 700; color: #2A2A2A; }
+#archia-doc.tpl-carvao em { font-style: italic; color: #6A6A5A; }
+#archia-doc.tpl-carvao hr { border: none; border-top: 1px solid #2A2A2A; margin: 24px 0; }
+#archia-doc.tpl-carvao blockquote {
+  border-left: 3px solid #B8923A; padding-left: 16px;
+  color: #7A6A4A; font-style: italic; margin: 12px 0;
+}`,
+  },
+
+  {
+    id: "rose",
+    nome: "Rosé contemporâneo",
+    desc: "Sans-serif · off-white rosado · suave",
+    preview: { bg: "#F7F1EE", border: "#E8D8D4", heading: "#3A2A28", body: "#5A4848", accent: "#B5837A" },
+    css: `
+#archia-doc.tpl-rose {
+  font-family: 'DM Sans', Helvetica, Arial, system-ui, sans-serif;
+  background: #F7F1EE;
+  color: #3A2A28;
+  padding: 56px 72px;
+}
+#archia-doc.tpl-rose .doc-logo {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #B5837A;
+  margin-bottom: 36px;
+  border-bottom: 1.5px solid #B5837A;
+  padding-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#archia-doc.tpl-rose .doc-logo span {
+  display: inline;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #C0A098;
+  margin-left: 6px;
+}
+#archia-doc.tpl-rose h1, #archia-doc.tpl-rose h2 {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #B5837A; margin: 30px 0 10px;
+  padding-top: 18px; border-top: 0.5px solid #E0C8C4;
+}
+#archia-doc.tpl-rose h3 {
+  font-size: 13px; font-weight: 600; color: #3A2A28;
+  margin: 16px 0 6px;
+}
+#archia-doc.tpl-rose p {
+  font-size: 13px; line-height: 1.85; color: #5A4848; margin: 8px 0;
+}
+#archia-doc.tpl-rose ul, #archia-doc.tpl-rose ol {
+  padding-left: 20px; margin: 8px 0;
+}
+#archia-doc.tpl-rose li {
+  font-size: 13px; line-height: 1.75; color: #5A4848; margin: 4px 0;
+}
+#archia-doc.tpl-rose strong { font-weight: 600; color: #3A2A28; }
+#archia-doc.tpl-rose em { font-style: italic; color: #8A6A68; }
+#archia-doc.tpl-rose hr { border: none; border-top: 0.5px solid #E0C8C4; margin: 24px 0; }
+#archia-doc.tpl-rose blockquote {
+  border-left: 3px solid #B5837A; padding-left: 16px;
+  color: #8A6A68; font-style: italic; margin: 12px 0;
+  background: #EFE8E4; padding: 10px 16px; border-radius: 0 6px 6px 0;
 }`,
   },
 ];

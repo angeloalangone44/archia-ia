@@ -1,6 +1,7 @@
 "use client";
 
-import TemplateRenderer from "@/components/TemplateRenderer";
+import TemplateRenderer, { TemaPickerCompact } from "@/components/TemplateRenderer";
+import type { TemaDocumento } from "@/lib/pdf-themes";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useRef, useState } from "react";
 import { Input, Select, Textarea, FormGroup, SectionDivider } from "@/components/DocumentForm";
@@ -1054,7 +1055,7 @@ export default function BriefingPage() {
   // All room data keyed by full ID: { sala: {...}, quarto_0: {...}, quarto_1: {...} }
   const [roomData, setRoomData] = useState<Record<string, RoomFields>>({});
 
-  const [temaDocumento, setTemaDocumento] = useState<import("@/lib/pdf-themes").TemaDocumento>("classico");
+  const [temaDocumento, setTemaDocumento] = useState<TemaDocumento>("classico");
 
   useEffect(() => {
     const saved = localStorage.getItem(BRIEFING_MODEL_KEY);
@@ -1270,6 +1271,8 @@ export default function BriefingPage() {
               ...(data.obsGerais     ? { obsGerais:     data.obsGerais }     : {}),
             }));
           }} />
+          <TemaPickerCompact selected={temaDocumento} onChange={setTemaDocumento} />
+
           <p className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: "var(--ink3)" }}>Tipo de projeto</p>
           <div className="grid grid-cols-5 gap-2 mb-7">
             {TIPOS_PROJETO.map((t) => {
@@ -1473,7 +1476,7 @@ export default function BriefingPage() {
         </div>
       )}
 
-      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} temaDocumento={temaDocumento} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} temaDocumento={temaDocumento} onTemaChange={setTemaDocumento} />
     </div>
   );
 }
