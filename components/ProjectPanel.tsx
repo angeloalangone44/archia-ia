@@ -77,17 +77,44 @@ const DOC_CSS = `
 /* ── Links por projeto ────────────────────────────────────── */
 
 const TIPO_LINK_LABELS: Record<TipoLink, string> = {
-  planta: "Planta",
+  planta: "Planta / projeto",
+  renderizacao: "Renderização / 3D",
   referencia: "Referência visual",
   contrato: "Contrato",
   orcamento: "Orçamento",
+  foto: "Foto do imóvel",
   outro: "Outro",
+};
+
+const TIPO_LINK_COLOR: Record<TipoLink, string> = {
+  planta: "#1A3A5C",
+  renderizacao: "#6B3FA0",
+  referencia: "#8B6914",
+  contrato: "#2D5A3D",
+  orcamento: "#1A5A3A",
+  foto: "#5A3A1A",
+  outro: "#6B6760",
+};
+
+const TIPO_LINK_BG: Record<TipoLink, string> = {
+  planta: "#E8EFF6",
+  renderizacao: "#F0EAF8",
+  referencia: "#FDF3DC",
+  contrato: "#EAF2EC",
+  orcamento: "#E8F4EC",
+  foto: "#FDF0E8",
+  outro: "#F0EDE6",
 };
 
 const TIPO_LINK_ICON: Record<TipoLink, React.ReactNode> = {
   planta: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
       <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
+    </svg>
+  ),
+  renderizacao: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
     </svg>
   ),
   referencia: (
@@ -102,7 +129,13 @@ const TIPO_LINK_ICON: Record<TipoLink, React.ReactNode> = {
   ),
   orcamento: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z" strokeWidth={0} fill="currentColor"/>
+      <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
+    </svg>
+  ),
+  foto: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
     </svg>
   ),
   outro: (
@@ -112,7 +145,7 @@ const TIPO_LINK_ICON: Record<TipoLink, React.ReactNode> = {
   ),
 };
 
-function LinksSection({ projetoId }: { projetoId: string }) {
+function ArquivosTab({ projetoId }: { projetoId: string }) {
   const [links, setLinks] = useState<LinkProjeto[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [titulo, setTitulo] = useState("");
@@ -122,7 +155,10 @@ function LinksSection({ projetoId }: { projetoId: string }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getLinksByProjeto(projetoId).then(setLinks).catch(() => {});
+    getLinksByProjeto(projetoId).then((data) => {
+      // mais recente primeiro
+      setLinks([...data].sort((a, b) => b.created_at.localeCompare(a.created_at)));
+    }).catch(() => {});
   }, [projetoId]);
 
   async function handleAdd(e: React.FormEvent) {
@@ -132,7 +168,7 @@ function LinksSection({ projetoId }: { projetoId: string }) {
     setError("");
     try {
       const link = await addLink({ projeto_id: projetoId, titulo: titulo.trim(), url: url.trim(), tipo });
-      setLinks((prev) => [...prev, link]);
+      setLinks((prev) => [link, ...prev]);
       setTitulo(""); setUrl(""); setTipo("outro"); setShowModal(false);
     } catch {
       setError("Erro ao salvar. Verifique sua conexão.");
@@ -145,48 +181,88 @@ function LinksSection({ projetoId }: { projetoId: string }) {
     setLinks((prev) => prev.filter((l) => l.id !== id));
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "8px 12px",
+    border: "1px solid var(--border-strong)",
+    borderRadius: "var(--radius)",
+    background: "var(--surface2)",
+    color: "var(--ink)", fontSize: 13,
+    fontFamily: "'DM Sans', sans-serif",
+    outline: "none", boxSizing: "border-box",
+  };
+
   return (
-    <div className="rounded-2xl px-5 py-4" style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}>
+    <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-          style={{ background: "var(--surface2)", color: "var(--ink2)" }}>
-          Arquivos e referências
-        </span>
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg"
-          style={{ background: "var(--surface2)", color: "var(--ink2)", border: "0.5px solid var(--border)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+        <div>
+          <p className="text-[12px]" style={{ color: "var(--ink3)" }}>
+            Cole links do Google Drive, Dropbox ou similar — os arquivos não são armazenados aqui, apenas o link de acesso.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-lg flex-shrink-0 ml-4"
+          style={{ background: "var(--accent)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} width={13} height={13}>
             <path d="M12 5v14M5 12h14" />
           </svg>
-          Adicionar link
+          Adicionar arquivo/link
         </button>
       </div>
 
+      {/* Lista */}
       {links.length === 0 ? (
-        <p className="text-[12px]" style={{ color: "var(--ink3)" }}>Nenhum arquivo ou link ainda</p>
+        <div className="flex flex-col items-center justify-center py-14 text-center rounded-2xl"
+          style={{ background: "var(--surface)", border: "0.5px dashed var(--border-strong)" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.3} width={32} height={32}
+            style={{ color: "var(--ink3)", marginBottom: 12 }}>
+            <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.1-1.1" strokeLinecap="round"/>
+          </svg>
+          <p className="text-[13px] font-medium mb-1" style={{ color: "var(--ink2)" }}>
+            Nenhum arquivo adicionado ainda
+          </p>
+          <p className="text-[12px] max-w-xs" style={{ color: "var(--ink3)" }}>
+            Adicione links de plantas, renders, referências ou outros documentos relevantes para este projeto.
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           {links.map((link) => (
-            <div key={link.id} className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
-              <span style={{ color: "var(--ink3)", flexShrink: 0 }}>
+            <div key={link.id}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl"
+              style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}>
+              {/* Ícone colorido */}
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: TIPO_LINK_BG[link.tipo], color: TIPO_LINK_COLOR[link.tipo] }}>
                 {TIPO_LINK_ICON[link.tipo]}
-              </span>
+              </div>
+              {/* Info */}
               <div className="flex-1 min-w-0">
                 <a href={link.url} target="_blank" rel="noopener noreferrer"
-                  className="text-[12px] font-medium block truncate hover:underline"
-                  style={{ color: "var(--ink)", textDecoration: "none" }}>
+                  className="text-[13px] font-medium block truncate"
+                  style={{ color: "var(--ink)", textDecoration: "none" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                  onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}>
                   {link.titulo}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={11} height={11}
+                    style={{ display: "inline", marginLeft: 4, verticalAlign: "middle", opacity: 0.5 }}>
+                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </a>
-                <span className="text-[11px]" style={{ color: "var(--ink3)" }}>
+                <span className="text-[11px] px-1.5 py-0.5 rounded-md inline-block mt-0.5"
+                  style={{ background: TIPO_LINK_BG[link.tipo], color: TIPO_LINK_COLOR[link.tipo] }}>
                   {TIPO_LINK_LABELS[link.tipo]}
                 </span>
               </div>
-              <button onClick={() => handleDelete(link.id)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: "4px", flexShrink: 0 }}
-                title="Remover">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={14} height={14}>
-                  <path d="M6 18L18 6M6 6l12 12" />
+              {/* Delete */}
+              <button onClick={() => handleDelete(link.id)} title="Remover"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: "6px", flexShrink: 0, borderRadius: 6 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--surface2)"; (e.currentTarget as HTMLButtonElement).style.color = "#DC2626"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; (e.currentTarget as HTMLButtonElement).style.color = "var(--ink3)"; }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={15} height={15}>
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             </div>
@@ -198,45 +274,66 @@ function LinksSection({ projetoId }: { projetoId: string }) {
       {showModal && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 9000,
-          background: "rgba(0,0,0,0.4)", display: "flex",
+          background: "rgba(0,0,0,0.45)", display: "flex",
           alignItems: "center", justifyContent: "center", padding: 24,
-        }}>
+        }}
+        onClick={(e) => { if (e.target === e.currentTarget) { setShowModal(false); setError(""); } }}>
           <div style={{
             background: "var(--surface)", borderRadius: "var(--radius-lg)",
-            padding: "28px 24px", width: "100%", maxWidth: "400px",
+            padding: "28px 24px", width: "100%", maxWidth: "420px",
             border: "1px solid var(--border)",
+            boxShadow: "0 16px 48px rgba(0,0,0,0.16)",
           }}>
-            <p className="text-[14px] font-medium mb-4" style={{ color: "var(--ink)" }}>Adicionar link</p>
-            <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-[15px] font-medium" style={{ color: "var(--ink)" }}>Adicionar arquivo / link</p>
+              <button onClick={() => { setShowModal(false); setError(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: 4 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16}>
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 4 }}>Título</label>
-                <input type="text" placeholder="Ex: Planta original" value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)} required
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius)", background: "var(--surface2)", color: "var(--ink)", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 5, fontWeight: 500 }}>
+                  Título <span style={{ color: "#DC2626" }}>*</span>
+                </label>
+                <input type="text"
+                  placeholder="Ex: Plantas do apartamento, Renderizações 3D..."
+                  value={titulo} onChange={(e) => setTitulo(e.target.value)} required
+                  style={inputStyle} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 4 }}>URL</label>
-                <input type="url" placeholder="https://..." value={url}
-                  onChange={(e) => setUrl(e.target.value)} required
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius)", background: "var(--surface2)", color: "var(--ink)", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 5, fontWeight: 500 }}>
+                  URL <span style={{ color: "#DC2626" }}>*</span>
+                </label>
+                <input type="url"
+                  placeholder="https://drive.google.com/..."
+                  value={url} onChange={(e) => setUrl(e.target.value)} required
+                  style={inputStyle} />
+                <p style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
+                  Google Drive, Dropbox, Pinterest, WeTransfer, etc.
+                </p>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 4 }}>Tipo</label>
-                <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoLink)}
-                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius)", background: "var(--surface2)", color: "var(--ink)", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }}>
+                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 5, fontWeight: 500 }}>Tipo</label>
+                <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoLink)} style={inputStyle}>
                   {(Object.entries(TIPO_LINK_LABELS) as [TipoLink, string][]).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>
                   ))}
                 </select>
               </div>
+
               {error && <p style={{ fontSize: 12, color: "#DC2626", margin: 0 }}>{error}</p>}
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
                 <button type="submit" disabled={saving}
-                  style={{ flex: 1, padding: "9px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", opacity: saving ? 0.7 : 1 }}>
+                  style={{ flex: 1, padding: "10px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", opacity: saving ? 0.7 : 1 }}>
                   {saving ? "Salvando..." : "Adicionar"}
                 </button>
                 <button type="button" onClick={() => { setShowModal(false); setError(""); }}
-                  style={{ flex: 1, padding: "9px", background: "transparent", color: "var(--ink2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  style={{ flex: 1, padding: "10px", background: "transparent", color: "var(--ink2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
                   Cancelar
                 </button>
               </div>
@@ -250,7 +347,7 @@ function LinksSection({ projetoId }: { projetoId: string }) {
 
 /* ── Abas do detalhe unificado ────────────────────────────── */
 
-type DetalheTab = "cliente" | "ambientes" | "documentos";
+type DetalheTab = "documentos" | "cliente" | "ambientes" | "arquivos";
 
 function ProjetoUnificadoDetalhe({
   projeto,
@@ -271,6 +368,7 @@ function ProjetoUnificadoDetalhe({
     { id: "documentos", label: "Documentos" },
     { id: "cliente", label: "Cliente e projeto" },
     { id: "ambientes", label: "Por ambiente" },
+    { id: "arquivos", label: "Arquivos" },
   ];
 
   return (
@@ -429,8 +527,6 @@ function ProjetoUnificadoDetalhe({
             )}
           </div>
 
-          {/* Links e referências externas */}
-          <LinksSection projetoId={projeto.id} />
         </div>
       )}
 
@@ -557,6 +653,11 @@ function ProjetoUnificadoDetalhe({
             </p>
           )}
         </div>
+      )}
+
+      {/* ── Aba: Arquivos ─── */}
+      {tab === "arquivos" && (
+        <ArquivosTab projetoId={projeto.id} />
       )}
 
       {/* Área de impressão (invisível na tela) */}

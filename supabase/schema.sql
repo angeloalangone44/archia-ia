@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS links_projeto (
   session_id TEXT NOT NULL,
   titulo TEXT NOT NULL,
   url TEXT NOT NULL,
-  tipo TEXT DEFAULT 'outro' CHECK (tipo IN ('planta','referencia','contrato','orcamento','outro')),
+  tipo TEXT DEFAULT 'outro' CHECK (tipo IN ('planta','renderizacao','referencia','contrato','orcamento','foto','outro')),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_links_session ON links_projeto(session_id);

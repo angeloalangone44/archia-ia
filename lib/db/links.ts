@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { getSessionId } from "@/lib/session";
 
-export type TipoLink = "planta" | "referencia" | "contrato" | "orcamento" | "outro";
+export type TipoLink = "planta" | "renderizacao" | "referencia" | "contrato" | "orcamento" | "foto" | "outro";
 
 export type LinkProjeto = {
   id: string;
