@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { marked } from "marked";
 import {
@@ -20,6 +20,7 @@ import {
   AMBIENTE_LABELS,
 } from "@/lib/archia-project";
 import { getCalculoByProjeto, formatCurrency, type CalculoSalvo } from "@/lib/calculadora";
+import { getLinksByProjeto, addLink, deleteLink, type LinkProjeto, type TipoLink } from "@/lib/db/links";
 import { getStageProgress } from "@/lib/stages";
 import { getNextCompromisso, TIPO_LABEL as C_TIPO_LABEL, TIPO_COLOR, relativeDay } from "@/lib/planner";
 import StageTracker from "@/components/StageTracker";
@@ -72,6 +73,180 @@ const DOC_CSS = `
   #projeto-print hr { border: none; border-top: 1px solid #E5E0D8; margin: 20px 0; }
   #projeto-print blockquote { border-left: 3px solid #D8D0C0; padding-left: 14px; color: #7A6A50; font-style: italic; margin: 10px 0; }
 `;
+
+/* ── Links por projeto ────────────────────────────────────── */
+
+const TIPO_LINK_LABELS: Record<TipoLink, string> = {
+  planta: "Planta",
+  referencia: "Referência visual",
+  contrato: "Contrato",
+  orcamento: "Orçamento",
+  outro: "Outro",
+};
+
+const TIPO_LINK_ICON: Record<TipoLink, React.ReactNode> = {
+  planta: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
+    </svg>
+  ),
+  referencia: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <rect x="3" y="3" width="18" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+    </svg>
+  ),
+  contrato: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  orcamento: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z" strokeWidth={0} fill="currentColor"/>
+    </svg>
+  ),
+  outro: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={14} height={14}>
+      <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.1-1.1" strokeLinecap="round"/>
+    </svg>
+  ),
+};
+
+function LinksSection({ projetoId }: { projetoId: string }) {
+  const [links, setLinks] = useState<LinkProjeto[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [titulo, setTitulo] = useState("");
+  const [url, setUrl] = useState("");
+  const [tipo, setTipo] = useState<TipoLink>("outro");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    getLinksByProjeto(projetoId).then(setLinks).catch(() => {});
+  }, [projetoId]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!titulo.trim() || !url.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      const link = await addLink({ projeto_id: projetoId, titulo: titulo.trim(), url: url.trim(), tipo });
+      setLinks((prev) => [...prev, link]);
+      setTitulo(""); setUrl(""); setTipo("outro"); setShowModal(false);
+    } catch {
+      setError("Erro ao salvar. Verifique sua conexão.");
+    }
+    setSaving(false);
+  }
+
+  async function handleDelete(id: string) {
+    await deleteLink(id);
+    setLinks((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  return (
+    <div className="rounded-2xl px-5 py-4" style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+          style={{ background: "var(--surface2)", color: "var(--ink2)" }}>
+          Arquivos e referências
+        </span>
+        <button onClick={() => setShowModal(true)}
+          className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg"
+          style={{ background: "var(--surface2)", color: "var(--ink2)", border: "0.5px solid var(--border)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Adicionar link
+        </button>
+      </div>
+
+      {links.length === 0 ? (
+        <p className="text-[12px]" style={{ color: "var(--ink3)" }}>Nenhum arquivo ou link ainda</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {links.map((link) => (
+            <div key={link.id} className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
+              <span style={{ color: "var(--ink3)", flexShrink: 0 }}>
+                {TIPO_LINK_ICON[link.tipo]}
+              </span>
+              <div className="flex-1 min-w-0">
+                <a href={link.url} target="_blank" rel="noopener noreferrer"
+                  className="text-[12px] font-medium block truncate hover:underline"
+                  style={{ color: "var(--ink)", textDecoration: "none" }}>
+                  {link.titulo}
+                </a>
+                <span className="text-[11px]" style={{ color: "var(--ink3)" }}>
+                  {TIPO_LINK_LABELS[link.tipo]}
+                </span>
+              </div>
+              <button onClick={() => handleDelete(link.id)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", padding: "4px", flexShrink: 0 }}
+                title="Remover">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} width={14} height={14}>
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9000,
+          background: "rgba(0,0,0,0.4)", display: "flex",
+          alignItems: "center", justifyContent: "center", padding: 24,
+        }}>
+          <div style={{
+            background: "var(--surface)", borderRadius: "var(--radius-lg)",
+            padding: "28px 24px", width: "100%", maxWidth: "400px",
+            border: "1px solid var(--border)",
+          }}>
+            <p className="text-[14px] font-medium mb-4" style={{ color: "var(--ink)" }}>Adicionar link</p>
+            <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 4 }}>Título</label>
+                <input type="text" placeholder="Ex: Planta original" value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)} required
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius)", background: "var(--surface2)", color: "var(--ink)", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 4 }}>URL</label>
+                <input type="url" placeholder="https://..." value={url}
+                  onChange={(e) => setUrl(e.target.value)} required
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius)", background: "var(--surface2)", color: "var(--ink)", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "var(--ink2)", display: "block", marginBottom: 4 }}>Tipo</label>
+                <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoLink)}
+                  style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--border-strong)", borderRadius: "var(--radius)", background: "var(--surface2)", color: "var(--ink)", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }}>
+                  {(Object.entries(TIPO_LINK_LABELS) as [TipoLink, string][]).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              {error && <p style={{ fontSize: 12, color: "#DC2626", margin: 0 }}>{error}</p>}
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button type="submit" disabled={saving}
+                  style={{ flex: 1, padding: "9px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "var(--radius)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", opacity: saving ? 0.7 : 1 }}>
+                  {saving ? "Salvando..." : "Adicionar"}
+                </button>
+                <button type="button" onClick={() => { setShowModal(false); setError(""); }}
+                  style={{ flex: 1, padding: "9px", background: "transparent", color: "var(--ink2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Abas do detalhe unificado ────────────────────────────── */
 
@@ -253,6 +428,9 @@ function ProjetoUnificadoDetalhe({
               <p className="text-[12px]" style={{ color: "var(--ink3)" }}>Ainda não calculado</p>
             )}
           </div>
+
+          {/* Links e referências externas */}
+          <LinksSection projetoId={projeto.id} />
         </div>
       )}
 

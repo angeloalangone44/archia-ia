@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   getConfiguracoesOrDefault,
   saveConfiguracoes,
@@ -8,6 +8,162 @@ import {
   type EtapaConfig,
 } from "@/lib/configuracoes";
 import { Input, FormGroup, SectionDivider } from "@/components/DocumentForm";
+import { getModelo, saveModelo, deleteModelo, type TipoModelo } from "@/lib/db/modelos";
+
+/* ── Editor de modelo (colar texto + upload) ─────────────── */
+
+function ModeloEditor({ tipo, label }: { tipo: TipoModelo; label: string }) {
+  const [tab, setTab] = useState<"colar" | "upload">("colar");
+  const [texto, setTexto] = useState("");
+  const [preview, setPreview] = useState("");
+  const [existente, setExistente] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getModelo(tipo).then((m) => {
+      if (m) setExistente(m.conteudo.slice(0, 120) + (m.conteudo.length > 120 ? "…" : ""));
+    });
+  }, [tipo]);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/extract-text", { method: "POST", body: fd });
+    const json = await res.json();
+    if (json.error) {
+      setError(json.error);
+    } else {
+      setTexto(json.text);
+      setPreview(json.preview);
+    }
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleSave() {
+    if (!texto.trim()) return;
+    setSaving(true);
+    try {
+      await saveModelo(tipo, texto.trim());
+      setExistente(texto.trim().slice(0, 120) + (texto.trim().length > 120 ? "…" : ""));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      setError("Erro ao salvar. Verifique sua conexão.");
+    }
+    setSaving(false);
+  }
+
+  async function handleRemove() {
+    if (!confirm("Remover modelo? O sistema voltará ao padrão.")) return;
+    await deleteModelo(tipo);
+    setExistente(null);
+    setTexto("");
+    setPreview("");
+  }
+
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: "6px 14px",
+    fontSize: "12px",
+    fontWeight: 500,
+    borderRadius: "6px",
+    cursor: "pointer",
+    border: "none",
+    fontFamily: "'DM Sans', sans-serif",
+    background: active ? "var(--accent)" : "transparent",
+    color: active ? "#fff" : "var(--ink2)",
+  });
+
+  return (
+    <div>
+      <p className="text-[12px] mb-3 font-medium" style={{ color: "var(--ink)" }}>{label}</p>
+
+      {existente && (
+        <div className="mb-3 px-3 py-2.5 rounded-xl text-[12px]"
+          style={{ background: "var(--accent-light)", border: "1px solid rgba(45,90,61,0.2)", color: "var(--accent)" }}>
+          <span className="font-medium">Modelo salvo:</span>{" "}
+          <span style={{ color: "var(--ink2)" }}>{existente}</span>
+          <button onClick={handleRemove}
+            style={{ marginLeft: 8, background: "none", border: "none", color: "#DC2626", fontSize: "11px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Remover
+          </button>
+        </div>
+      )}
+
+      <div className="flex gap-1 mb-3 p-1 rounded-lg w-fit" style={{ background: "var(--surface2)" }}>
+        <button style={tabStyle(tab === "colar")} onClick={() => setTab("colar")}>Colar texto</button>
+        <button style={tabStyle(tab === "upload")} onClick={() => setTab("upload")}>Upload de arquivo</button>
+      </div>
+
+      {tab === "colar" ? (
+        <textarea
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          rows={6}
+          placeholder={`Cole aqui um ${label.toLowerCase()} anterior como referência de estrutura e tom...`}
+          style={{
+            width: "100%", padding: "10px 12px", borderRadius: "var(--radius)",
+            border: "0.5px solid var(--border-strong)", background: "var(--surface2)",
+            color: "var(--ink)", fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
+            resize: "vertical", outline: "none", boxSizing: "border-box",
+          }}
+        />
+      ) : (
+        <div>
+          <label style={{
+            display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px",
+            border: "1.5px dashed var(--border-strong)", borderRadius: "var(--radius)",
+            cursor: "pointer", background: "var(--surface2)",
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} width={20} height={20} style={{ color: "var(--ink3)" }}>
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 10l-4-4-4 4M12 6v8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <div>
+              <p style={{ margin: 0, fontSize: "13px", color: "var(--ink)", fontWeight: 500 }}>
+                {uploading ? "Extraindo texto..." : "Selecionar arquivo"}
+              </p>
+              <p style={{ margin: 0, fontSize: "11px", color: "var(--ink3)" }}>.pdf, .docx, .txt — máx. 2MB</p>
+            </div>
+            <input ref={fileRef} type="file" accept=".pdf,.docx,.txt" onChange={handleUpload} style={{ display: "none" }} />
+          </label>
+
+          {preview && (
+            <div className="mt-3 px-3 py-2.5 rounded-xl text-[12px]"
+              style={{ background: "var(--surface2)", border: "0.5px solid var(--border)" }}>
+              <p style={{ margin: "0 0 4px", fontWeight: 500, color: "var(--ink2)" }}>Preview (primeiros 300 caracteres):</p>
+              <p style={{ margin: 0, color: "var(--ink)", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{preview}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#DC2626" }}>{error}</p>}
+
+      {texto && (
+        <div className="flex items-center gap-3 mt-3">
+          <button onClick={handleSave} disabled={saving}
+            style={{
+              padding: "7px 16px", background: "var(--accent)", color: "#fff",
+              border: "none", borderRadius: "var(--radius)", fontSize: "12px",
+              fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              opacity: saving ? 0.7 : 1,
+            }}>
+            {saving ? "Salvando..." : "Salvar modelo"}
+          </button>
+          {saved && <span style={{ fontSize: "12px", color: "var(--accent)" }}>✓ Salvo</span>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Editor de etapas ───────────────────────────────────── */
 
@@ -249,6 +405,19 @@ export default function ConfiguracoesPage() {
             Estas configurações valem para todos os projetos futuros.
           </p>
           <EtapasEditor etapas={etapas} onChange={setEtapas} />
+        </div>
+
+        {/* Modelos do escritório */}
+        <div className="rounded-2xl px-5 py-4" style={{ border: "0.5px solid var(--border)", background: "var(--surface)" }}>
+          <SectionDivider>Modelos do escritório</SectionDivider>
+          <p className="text-[12px] mb-5 leading-relaxed" style={{ color: "var(--ink3)" }}>
+            Cole ou faça upload de um documento anterior. A IA usará como referência de estrutura e tom nas próximas gerações.
+          </p>
+          <div className="flex flex-col gap-6">
+            <ModeloEditor tipo="proposta" label="Modelo de Proposta" />
+            <hr style={{ border: "none", borderTop: "1px solid var(--border)" }} />
+            <ModeloEditor tipo="briefing" label="Modelo de Briefing" />
+          </div>
         </div>
 
         {/* Salvar */}

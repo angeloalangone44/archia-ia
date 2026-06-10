@@ -5,6 +5,7 @@ import {
   PROMPTS,
   type DocumentoTipo,
 } from "@/lib/prompts";
+import { createClient } from "@/lib/supabase/server";
 
 const BOM_RE = new RegExp(String.fromCharCode(0xFEFF), "g");
 
@@ -58,10 +59,30 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Fetch modelo salvo pelo usuário (se autenticado)
+  let modeloReferencia: string | null = null;
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user && (tipo === "briefing" || tipo === "proposta")) {
+      const { data } = await supabase
+        .from("modelos_escritorio")
+        .select("conteudo")
+        .eq("user_id", user.id)
+        .eq("tipo", tipo)
+        .limit(1)
+        .maybeSingle();
+      modeloReferencia = data?.conteudo ?? null;
+    }
+  } catch {}
+
   const promptFn = PROMPTS[tipo] as (d: never) => string;
   // Strip BOM do prompt final — garante que nenhum BOM residual vai para a API
   const userPrompt = promptFn(dados as never).replace(BOM_RE, "");
-  const systemPrompt = buildSystemPrompt(extraContext).replace(BOM_RE, "");
+  const modeloCtx = modeloReferencia
+    ? `\n\nMODELO DE REFERÊNCIA DO ESCRITÓRIO:\nUse a seguinte estrutura e tom como referência para gerar o documento:\n\n${modeloReferencia.slice(0, 3000)}`
+    : "";
+  const systemPrompt = buildSystemPrompt((extraContext ?? "") + modeloCtx).replace(BOM_RE, "");
 
   const stream = new ReadableStream({
     async start(controller) {

@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import MigrationBanner from "@/components/MigrationBanner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      <MigrationBanner />
     </div>
   );
 }
