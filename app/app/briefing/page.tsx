@@ -13,6 +13,7 @@ import {
   type AmbienteData,
   type ArchiaProjetoUnificado,
 } from "@/lib/archia-project";
+import { getConfiguracoesOrDefault } from "@/lib/configuracoes";
 
 /* ── constantes ─────────────────────────────────────────── */
 
@@ -1053,9 +1054,13 @@ export default function BriefingPage() {
   // All room data keyed by full ID: { sala: {...}, quarto_0: {...}, quarto_1: {...} }
   const [roomData, setRoomData] = useState<Record<string, RoomFields>>({});
 
+  const [temaDocumento, setTemaDocumento] = useState<import("@/lib/pdf-themes").TemaDocumento>("classico");
+
   useEffect(() => {
     const saved = localStorage.getItem(BRIEFING_MODEL_KEY);
     if (saved) setS1((prev) => ({ ...prev, modeloBriefing: saved }));
+    const cfg = getConfiguracoesOrDefault();
+    if (cfg.temaDocumento) setTemaDocumento(cfg.temaDocumento);
   }, []);
 
   useEffect(() => {
@@ -1468,7 +1473,7 @@ export default function BriefingPage() {
         </div>
       )}
 
-      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} temaDocumento={temaDocumento} />
     </div>
   );
 }

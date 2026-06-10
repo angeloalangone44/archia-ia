@@ -8,6 +8,8 @@ import {
   type EtapaConfig,
   type LogoPosicao,
 } from "@/lib/configuracoes";
+import { PDF_THEMES, getTema, type TemaDocumento } from "@/lib/pdf-themes";
+import { TemaCard, TemaPreviewModal } from "@/components/TemplateRenderer";
 import { Input, FormGroup, SectionDivider } from "@/components/DocumentForm";
 import { getModelo, saveModelo, deleteModelo, type TipoModelo } from "@/lib/db/modelos";
 
@@ -279,10 +281,13 @@ export default function ConfiguracoesPage() {
   const [etapas,       setEtapas]       = useState(ETAPAS_PADRAO);
   const [saved,        setSaved]        = useState(false);
   // Logo
-  const [logoBase64,   setLogoBase64]   = useState<string | undefined>(undefined);
-  const [logoPosicao,  setLogoPosicao]  = useState<LogoPosicao>("cabecalho");
-  const [logoError,    setLogoError]    = useState("");
+  const [logoBase64,      setLogoBase64]      = useState<string | undefined>(undefined);
+  const [logoPosicao,     setLogoPosicao]     = useState<LogoPosicao>("cabecalho");
+  const [logoError,       setLogoError]       = useState("");
   const logoInputRef = useRef<HTMLInputElement>(null);
+  // Tema do documento
+  const [temaDocumento,   setTemaDocumento]   = useState<TemaDocumento>("classico");
+  const [temaPreview,     setTemaPreview]     = useState<TemaDocumento | null>(null);
 
   useEffect(() => {
     const c = getConfiguracoesOrDefault();
@@ -293,8 +298,9 @@ export default function ConfiguracoesPage() {
     setHorasM2Res  (String(c.horasM2Residencial ?? 1.5));
     setHorasM2Com  (String(c.horasM2Comercial   ?? 1.2));
     setEtapas      (c.etapas.length > 0 ? c.etapas : ETAPAS_PADRAO);
-    setLogoBase64  (c.logoBase64);
-    setLogoPosicao (c.logoPosicao ?? "cabecalho");
+    setLogoBase64     (c.logoBase64);
+    setLogoPosicao    (c.logoPosicao    ?? "cabecalho");
+    setTemaDocumento  (c.temaDocumento  ?? "classico");
   }, []);
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -322,6 +328,7 @@ export default function ConfiguracoesPage() {
       horasM2Comercial:    parseFloat(horasM2Com)   || 1.2,
       logoBase64,
       logoPosicao,
+      temaDocumento,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -495,6 +502,23 @@ export default function ConfiguracoesPage() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Tema do documento */}
+        <div className="rounded-2xl px-5 py-4" style={{ border: "0.5px solid var(--border)", background: "var(--surface)" }}>
+          <SectionDivider>Tema do documento</SectionDivider>
+          <p className="text-[12px] mb-4 leading-relaxed" style={{ color: "var(--ink3)" }}>
+            Escolha a aparência visual dos PDFs gerados — proposta e briefing.
+          </p>
+          <div className="grid grid-cols-5 gap-2">
+            {PDF_THEMES.map((tema) => (
+              <TemaCard key={tema.id} tema={tema}
+                selected={temaDocumento === tema.id}
+                onSelect={() => setTemaDocumento(tema.id)}
+                onPreview={() => setTemaPreview(tema.id)} />
+            ))}
+          </div>
+          {temaPreview && <TemaPreviewModal temaId={temaPreview} onClose={() => setTemaPreview(null)} />}
         </div>
 
         {/* Modelos do escritório */}

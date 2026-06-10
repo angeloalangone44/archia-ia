@@ -364,6 +364,7 @@ export default function PropostaPage() {
   const [projetoId, setProjetoId] = useState("");
   const [logoBase64, setLogoBase64] = useState<string | undefined>(undefined);
   const [logoPosicao, setLogoPosicao] = useState<"cabecalho" | "marca-dagua">("cabecalho");
+  const [temaDocumento, setTemaDocumento] = useState<import("@/lib/pdf-themes").TemaDocumento>("classico");
 
   const [f, setF] = useState({
     cliente: "", tipo: "", escopo: "",
@@ -378,6 +379,7 @@ export default function PropostaPage() {
     if (saved) setF((prev) => ({ ...prev, estruturaPersonalizada: saved }));
     const cfg = getConfiguracoesOrDefault();
     if (cfg.logoBase64) { setLogoBase64(cfg.logoBase64); setLogoPosicao(cfg.logoPosicao ?? "cabecalho"); }
+    if (cfg.temaDocumento) setTemaDocumento(cfg.temaDocumento);
 
     // Carrega honorário sugerido pela calculadora
     const honorario = localStorage.getItem("archia_honorario_sugerido");
@@ -589,7 +591,7 @@ export default function PropostaPage() {
         </FormGrid>
       </DocumentForm>
 
-      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} logoBase64={logoBase64} logoPosicao={logoPosicao} />
+      <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} logoBase64={logoBase64} logoPosicao={logoPosicao} temaDocumento={temaDocumento} />
     </div>
   );
 }

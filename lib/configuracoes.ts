@@ -1,3 +1,6 @@
+import type { TemaDocumento } from "./pdf-themes";
+export type { TemaDocumento };
+
 /* ── Tipos ──────────────────────────────────────────────── */
 
 export type EtapaConfig = {
@@ -19,6 +22,7 @@ export type ConfiguracaoEscritorio = {
   // Identidade visual
   logoBase64?: string;
   logoPosicao?: LogoPosicao;
+  temaDocumento?: TemaDocumento;
 };
 
 /* ── Defaults ───────────────────────────────────────────── */
@@ -53,6 +57,7 @@ export function getConfiguracoes(): ConfiguracaoEscritorio | null {
       horasM2Comercial:   parsed.horasM2Comercial   ?? 1.2,
       logoBase64:         parsed.logoBase64,
       logoPosicao:        parsed.logoPosicao        ?? "cabecalho",
+      temaDocumento:      parsed.temaDocumento      ?? "classico",
     };
   } catch {
     return null;
