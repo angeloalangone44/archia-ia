@@ -1,10 +1,19 @@
 // Unified project model for archi.ia v0.3
 // Stores complete client + project + ambiente + document data
 
+export type MóvelItem = {
+  id: string;
+  descricao: string;
+  medidas: string;
+  fotoBase64?: string;
+  intervencoes: string[];
+};
+
 export type AmbienteData = {
   nome?: string;       // display name for multi-instance rooms (e.g. "Suíte master")
   tipoQuarto?: string; // for quarto instances: Casal / Kids / Hóspedes / Suíte
   estilo: string;
+  estiloTexto?: string; // free-text complement to style dropdown
   paredeRevestimento: string;
   pisoRevestimento: string;
   iluminacao: string;
@@ -13,6 +22,7 @@ export type AmbienteData = {
   // móveis existentes
   aproveitarMoveis: string;
   aproveitarMoveisDetalhe: string;
+  moveisDetalhados?: MóvelItem[];
   // móveis novos
   moveisNovos: string;
   moveisNovosDetalhe: string;

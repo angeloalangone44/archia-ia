@@ -12,9 +12,34 @@ import {
   getArchiaProjectById,
   emptyAmbiente,
   type AmbienteData,
+  type MóvelItem,
   type ArchiaProjetoUnificado,
 } from "@/lib/archia-project";
 import { getConfiguracoesOrDefault } from "@/lib/configuracoes";
+
+/* ── itens personalizados (localStorage) ────────────────── */
+
+const CUSTOM_ITEMS_KEY = "archia_custom_items";
+
+function loadCustomItems(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(CUSTOM_ITEMS_KEY) ?? "{}"); } catch { return {}; }
+}
+
+function saveCustomItem(ambienteBase: string, item: string) {
+  const all = loadCustomItems();
+  const existing = all[ambienteBase] ?? [];
+  if (!existing.includes(item)) {
+    all[ambienteBase] = [...existing, item];
+    localStorage.setItem(CUSTOM_ITEMS_KEY, JSON.stringify(all));
+  }
+}
+
+function removeCustomItem(ambienteBase: string, item: string) {
+  const all = loadCustomItems();
+  all[ambienteBase] = (all[ambienteBase] ?? []).filter((i) => i !== item);
+  localStorage.setItem(CUSTOM_ITEMS_KEY, JSON.stringify(all));
+}
 
 /* ── constantes ─────────────────────────────────────────── */
 
@@ -363,6 +388,262 @@ function RadioRow({ label, name, value, onChange, options }: {
   );
 }
 
+/* ── itens desejados com personalização ─────────────────── */
+
+function ItensDesejados({ ambienteBase, data, defaultItems, onChange }: {
+  ambienteBase: string;
+  data: RoomFields;
+  defaultItems: string[];
+  onChange: (updated: RoomFields) => void;
+}) {
+  const [customItems, setCustomItems] = useState<string[]>(() => {
+    const all = loadCustomItems();
+    return all[ambienteBase] ?? [];
+  });
+  const [adding, setAdding] = useState(false);
+  const [newItem, setNewItem] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const allItems = [...defaultItems, ...customItems];
+
+  function toggleItem(item: string) {
+    const cur = data.itens;
+    onChange({ ...data, itens: cur.includes(item) ? cur.filter((i) => i !== item) : [...cur, item] });
+  }
+
+  function handleAddItem() {
+    const val = newItem.trim();
+    if (!val) return;
+    saveCustomItem(ambienteBase, val);
+    setCustomItems((prev) => prev.includes(val) ? prev : [...prev, val]);
+    onChange({ ...data, itens: [...data.itens, val] });
+    setNewItem("");
+    setAdding(false);
+  }
+
+  function handleRemoveCustom(item: string) {
+    removeCustomItem(ambienteBase, item);
+    setCustomItems((prev) => prev.filter((i) => i !== item));
+    onChange({ ...data, itens: data.itens.filter((i) => i !== item) });
+  }
+
+  if (allItems.length === 0 && !adding) return (
+    <div className="py-2" style={{ borderBottom: "0.5px solid var(--border)" }}>
+      <button type="button" onClick={() => { setAdding(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+        className="text-[12px] px-3 py-1 rounded-full"
+        style={{ background: "var(--surface2)", color: "var(--ink3)", border: "0.5px dashed var(--border-strong)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+        + Adicionar item desejado
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
+      <p className="text-[12px] mb-2.5" style={{ color: "var(--ink3)" }}>Itens desejados</p>
+      <div className="flex flex-wrap gap-2">
+        {allItems.map((item) => {
+          const checked = data.itens.includes(item);
+          const isCustom = customItems.includes(item);
+          return (
+            <div key={item} className="relative group">
+              <button type="button" onClick={() => toggleItem(item)}
+                className="text-[12px] px-3 py-1 rounded-full transition-colors"
+                style={{ background: checked ? "var(--accent)" : "var(--surface2)", color: checked ? "#fff" : "var(--ink2)", border: checked ? "0.5px solid var(--accent)" : "0.5px solid var(--border-strong)", fontFamily: "'DM Sans', sans-serif", cursor: "pointer", paddingRight: isCustom ? 20 : undefined }}>
+                {checked ? "✓ " : ""}{item}
+              </button>
+              {isCustom && (
+                <button type="button" onClick={(e) => { e.stopPropagation(); handleRemoveCustom(item); }}
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full hidden group-hover:flex items-center justify-center text-[9px]"
+                  style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Outros chip */}
+        {adding ? (
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={inputRef}
+              type="text"
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddItem(); } if (e.key === "Escape") { setAdding(false); setNewItem(""); } }}
+              placeholder="Nome do item..."
+              className="text-[12px] px-3 py-1 rounded-full outline-none"
+              style={{ border: "1.5px solid var(--accent)", background: "var(--accent-light)", color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", width: 160 }}
+            />
+            <button type="button" onClick={handleAddItem}
+              className="text-[11px] px-2.5 py-1 rounded-full"
+              style={{ background: "var(--accent)", color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              OK
+            </button>
+            <button type="button" onClick={() => { setAdding(false); setNewItem(""); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", fontSize: 14 }}>×</button>
+          </div>
+        ) : (
+          <>
+            <button type="button" onClick={() => { setAdding(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+              className="text-[12px] px-3 py-1 rounded-full"
+              style={{ background: "var(--surface2)", color: "var(--ink3)", border: "0.5px dashed var(--border-strong)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              + Adicionar
+            </button>
+            <button type="button" onClick={() => { setAdding(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+              className="text-[12px] px-3 py-1 rounded-full"
+              style={{ background: "var(--surface2)", color: "var(--ink3)", border: "0.5px solid var(--border-strong)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              Outros
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── detalhamento de móveis a manter ────────────────────── */
+
+const INTERVENCOES_OPTIONS = ["Lavar/limpar", "Reformar/restaurar", "Pintar", "Reestofar", "Nenhuma — está em bom estado"];
+
+function MóvelItemForm({ item, onChange, onRemove }: {
+  item: MóvelItem;
+  onChange: (updated: MóvelItem) => void;
+  onRemove: () => void;
+}) {
+  const fotoRef = useRef<HTMLInputElement>(null);
+
+  function handleFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f || f.size > 2 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onChange({ ...item, fotoBase64: ev.target?.result as string });
+    reader.readAsDataURL(f);
+  }
+
+  function toggleIntervencao(opt: string) {
+    const cur = item.intervencoes;
+    onChange({ ...item, intervencoes: cur.includes(opt) ? cur.filter((i) => i !== opt) : [...cur, opt] });
+  }
+
+  return (
+    <div className="mt-3 rounded-xl p-4" style={{ border: "0.5px solid var(--border-strong)", background: "var(--surface2)" }}>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <Input
+          placeholder="Nome/descrição — ex: Sofá de 3 lugares cinza"
+          value={item.descricao}
+          onChange={(e) => onChange({ ...item, descricao: e.target.value })}
+          style={{ flex: 1 }}
+        />
+        <button type="button" onClick={onRemove}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", fontSize: 16, flexShrink: 0, paddingTop: 6 }}>×</button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <p className="text-[11px] mb-1" style={{ color: "var(--ink3)" }}>Medidas</p>
+          <Input
+            placeholder="Ex: 2,20m × 0,90m"
+            value={item.medidas}
+            onChange={(e) => onChange({ ...item, medidas: e.target.value })}
+          />
+        </div>
+        <div>
+          <p className="text-[11px] mb-1" style={{ color: "var(--ink3)" }}>Foto (opcional)</p>
+          {item.fotoBase64 ? (
+            <div className="flex items-center gap-2">
+              <img src={item.fotoBase64} alt="Foto do móvel" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 6 }} />
+              <button type="button" onClick={() => { onChange({ ...item, fotoBase64: undefined }); }}
+                className="text-[11px]" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", fontFamily: "'DM Sans', sans-serif" }}>
+                Remover
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => fotoRef.current?.click()}
+              className="w-full h-10 rounded-xl flex items-center justify-center gap-1.5 text-[11px]"
+              style={{ border: "0.5px dashed var(--border-strong)", background: "var(--surface)", cursor: "pointer", color: "var(--ink3)", fontFamily: "'DM Sans', sans-serif" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5"><path d="M12 4v16m8-8H4"/></svg>
+              Enviar foto
+            </button>
+          )}
+          <input ref={fotoRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleFoto} />
+        </div>
+      </div>
+
+      <p className="text-[11px] mb-1.5" style={{ color: "var(--ink3)" }}>Necessita intervenção?</p>
+      <div className="flex flex-wrap gap-2">
+        {INTERVENCOES_OPTIONS.map((opt) => {
+          const checked = item.intervencoes.includes(opt);
+          return (
+            <label key={opt} className="flex items-center gap-1.5 cursor-pointer text-[11px]"
+              style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
+              <input type="checkbox" checked={checked} onChange={() => toggleIntervencao(opt)}
+                style={{ accentColor: "var(--accent)", cursor: "pointer", width: 12, height: 12 }} />
+              {opt}
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MoveisExistentes({ fullId, data, onChange }: {
+  fullId: string;
+  data: RoomFields;
+  onChange: (updated: RoomFields) => void;
+}) {
+  function addMovel() {
+    const novo: MóvelItem = { id: crypto.randomUUID(), descricao: "", medidas: "", intervencoes: [] };
+    onChange({ ...data, moveisDetalhados: [...(data.moveisDetalhados ?? []), novo] });
+  }
+
+  function updateMovel(idx: number, updated: MóvelItem) {
+    const arr = [...(data.moveisDetalhados ?? [])];
+    arr[idx] = updated;
+    onChange({ ...data, moveisDetalhados: arr });
+  }
+
+  function removeMovel(idx: number) {
+    const arr = (data.moveisDetalhados ?? []).filter((_, i) => i !== idx);
+    onChange({ ...data, moveisDetalhados: arr });
+  }
+
+  return (
+    <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
+      <p className="text-[12px] mb-2" style={{ color: "var(--ink3)" }}>Algum móvel / item existente deve ser mantido?</p>
+      <div className="flex gap-5 mb-2">
+        {["Sim", "Não"].map((opt) => (
+          <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
+            style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
+            <input type="radio" name={`aproveitarMoveis-${fullId}`} value={opt}
+              checked={data.aproveitarMoveis === opt}
+              onChange={() => onChange({ ...data, aproveitarMoveis: opt, moveisDetalhados: opt === "Não" ? [] : data.moveisDetalhados })}
+              style={{ accentColor: "var(--accent)", cursor: "pointer" }} />
+            {opt}
+          </label>
+        ))}
+      </div>
+
+      {data.aproveitarMoveis === "Sim" && (
+        <div>
+          {(data.moveisDetalhados ?? []).map((movel, idx) => (
+            <MóvelItemForm key={movel.id} item={movel}
+              onChange={(u) => updateMovel(idx, u)}
+              onRemove={() => removeMovel(idx)} />
+          ))}
+          <button type="button" onClick={addMovel}
+            className="mt-3 flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-xl"
+            style={{ background: "var(--surface2)", border: "0.5px dashed var(--border-strong)", color: "var(--accent)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path d="M12 4v16m8-8H4"/></svg>
+            Adicionar móvel
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── form de um ambiente ────────────────────────────────── */
 
 function RoomForm({ fullId, label, data, onChange }: {
@@ -453,6 +734,15 @@ function RoomForm({ fullId, label, data, onChange }: {
               <option>Industrial</option>
             </Select>
           </FieldRow>
+          {/* Texto livre complementar ao estilo */}
+          <div className="py-1.5">
+            <Textarea
+              placeholder="Descreva com suas palavras (opcional) — ex: quero algo entre industrial e aconchegante, com toques vintage..."
+              value={data.estiloTexto ?? ""}
+              onChange={(e) => onChange({ ...data, estiloTexto: e.target.value })}
+              style={{ minHeight: 44, fontSize: 12 }}
+            />
+          </div>
           <FieldRow label="Revestimento de parede">
             <Input placeholder="Ex: cimento queimado, azulejo artesanal, tinta..." value={data.paredeRevestimento} onChange={set("paredeRevestimento")} />
           </FieldRow>
@@ -634,51 +924,15 @@ function RoomForm({ fullId, label, data, onChange }: {
           )}
 
           {/* Itens desejados */}
-          {items.length > 0 && (
-            <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
-              <p className="text-[12px] mb-2.5" style={{ color: "var(--ink3)" }}>Itens desejados</p>
-              <div className="flex flex-wrap gap-2">
-                {items.map((item) => {
-                  const checked = data.itens.includes(item);
-                  return (
-                    <button key={item} type="button" onClick={() => toggleItem(item)}
-                      className="text-[12px] px-3 py-1 rounded-full transition-colors"
-                      style={{
-                        background: checked ? "var(--accent)" : "var(--surface2)",
-                        color: checked ? "#fff" : "var(--ink2)",
-                        border: checked ? "0.5px solid var(--accent)" : "0.5px solid var(--border-strong)",
-                        fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
-                      }}>
-                      {checked ? "✓ " : ""}{item}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <ItensDesejados
+            ambienteBase={base}
+            data={data}
+            defaultItems={items}
+            onChange={onChange}
+          />
 
           {/* Móveis existentes */}
-          <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>
-            <p className="text-[12px] mb-2" style={{ color: "var(--ink3)" }}>Algum móvel / item existente deve ser mantido?</p>
-            <div className="flex gap-5 mb-2">
-              {["Sim", "Não"].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 cursor-pointer text-[13px]"
-                  style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
-                  <input type="radio" name={`aproveitarMoveis-${fullId}`} value={opt}
-                    checked={data.aproveitarMoveis === opt}
-                    onChange={() => onChange({ ...data, aproveitarMoveis: opt })}
-                    style={{ accentColor: "var(--accent)", cursor: "pointer" }} />
-                  {opt}
-                </label>
-              ))}
-            </div>
-            {data.aproveitarMoveis === "Sim" && (
-              <Textarea placeholder="Quais móveis serão mantidos?"
-                value={data.aproveitarMoveisDetalhe}
-                onChange={(e) => onChange({ ...data, aproveitarMoveisDetalhe: e.target.value })}
-                style={{ minHeight: 55 }} />
-            )}
-          </div>
+          <MoveisExistentes fullId={fullId} data={data} onChange={onChange} />
 
           {/* Móveis novos */}
           <div className="py-2.5" style={{ borderBottom: "0.5px solid var(--border)" }}>

@@ -194,7 +194,7 @@ function TemaPreviewModal({ temaId, onClose }: { temaId: TemaDocumento; onClose:
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "var(--surface)", borderRadius: 16, maxWidth: 640, width: "100%", maxHeight: "82vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "var(--surface)", borderRadius: 16, maxWidth: 900, width: "100%", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "0.5px solid var(--border)" }}>
           <span className="text-[14px] font-medium" style={{ color: "var(--ink)" }}>Preview — {tema.nome}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", fontSize: 18 }}>✕</button>
@@ -265,31 +265,31 @@ function TemaCard({ tema, selected, onSelect, onPreview, compact = false }: {
       onClick={onSelect}
     >
       {/* Miniatura */}
-      <div style={{ background: p.bg, padding: "10px 12px", height: 80, overflow: "hidden", borderBottom: `1px solid ${p.border}` }}>
-        <div style={{ height: 3, width: "50%", background: p.accent, borderRadius: 2, marginBottom: 7 }} />
-        <div style={{ height: 2, width: "70%", background: p.heading, borderRadius: 1, marginBottom: 5, opacity: 0.7 }} />
-        {[90, 75, 85, 60].map((w, i) => (
-          <div key={i} style={{ height: 1.5, width: `${w}%`, background: p.body, borderRadius: 1, marginBottom: 3.5, opacity: 0.35 }} />
+      <div style={{ background: p.bg, padding: "14px 16px", height: 112, overflow: "hidden", borderBottom: `1px solid ${p.border}` }}>
+        <div style={{ height: 4, width: "55%", background: p.accent, borderRadius: 3, marginBottom: 9 }} />
+        <div style={{ height: 2.5, width: "75%", background: p.heading, borderRadius: 1.5, marginBottom: 6, opacity: 0.8 }} />
+        {[92, 78, 88, 65, 80].map((w, i) => (
+          <div key={i} style={{ height: 2, width: `${w}%`, background: p.body, borderRadius: 1, marginBottom: 4, opacity: 0.32 }} />
         ))}
       </div>
 
       {/* Info */}
-      <div className="px-3 py-2.5 flex items-center justify-between">
+      <div className="px-3.5 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[12px] font-medium" style={{ color: selected ? "var(--accent)" : "var(--ink)" }}>{tema.nome}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "var(--ink3)" }}>{tema.desc}</p>
+          <p className="text-[13px] font-medium" style={{ color: selected ? "var(--accent)" : "var(--ink)" }}>{tema.nome}</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--ink3)" }}>{tema.desc}</p>
         </div>
         <div className="flex items-center gap-1.5">
           {selected && (
-            <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "var(--accent)" }}>
-              <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth={1.5} strokeLinecap="round"/></svg>
+            <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--accent)" }}>
+              <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth={1.5} strokeLinecap="round"/></svg>
             </div>
           )}
           <button type="button"
             onClick={(e) => { e.stopPropagation(); onPreview(); }}
-            className="text-[10px] px-2 py-1 rounded-md transition-opacity hover:opacity-70"
+            className="text-[11px] px-2.5 py-1.5 rounded-lg transition-opacity hover:opacity-70"
             style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)", color: "var(--ink3)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-            Ver
+            Ver exemplo
           </button>
         </div>
       </div>
@@ -336,7 +336,7 @@ function TemaPickerInline({ selected, onChange }: { selected: TemaDocumento; onC
       <p className="text-[11px] font-medium uppercase tracking-widest mb-3" style={{ color: "var(--ink3)" }}>
         Visualizar com tema
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
         {PDF_THEMES.map((tema) => (
           <TemaCard key={tema.id} tema={tema} selected={selected === tema.id}
             onSelect={() => onChange(tema.id)}

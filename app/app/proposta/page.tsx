@@ -218,7 +218,7 @@ function TemplatePreviewModal({ template, onClose }: { template: typeof PROPOSTA
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "var(--surface)", borderRadius: 16, maxWidth: 640, width: "100%", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "var(--surface)", borderRadius: 16, maxWidth: 900, width: "100%", maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "0.5px solid var(--border)" }}>
           <div className="flex items-center gap-2">
@@ -249,27 +249,27 @@ function TemplatesPropostaCards({ onSelect }: { onSelect: (conteudo: string) => 
       <p className="text-[12px] mb-3" style={{ color: "var(--ink3)" }}>
         Ou escolha um template como ponto de partida:
       </p>
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-3 gap-3">
         {PROPOSTA_TEMPLATES.map((tpl) => (
-          <div key={tpl.id} className="rounded-xl p-3.5 flex flex-col gap-2.5"
-            style={{ border: `0.5px solid ${tpl.color}33`, background: tpl.bg, cursor: "default" }}>
-            <div className="flex items-start justify-between">
-              <span className="text-xl">{tpl.icon}</span>
+          <div key={tpl.id} className="rounded-2xl p-5 flex flex-col gap-3"
+            style={{ border: `1.5px solid ${tpl.color}44`, background: tpl.bg, cursor: "default" }}>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{tpl.icon}</span>
             </div>
             <div>
-              <p className="text-[12px] font-medium leading-tight" style={{ color: tpl.color }}>{tpl.label}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: tpl.color, opacity: 0.7 }}>{tpl.desc}</p>
+              <p className="text-[14px] font-medium leading-tight" style={{ color: tpl.color }}>{tpl.label}</p>
+              <p className="text-[11px] mt-1 leading-relaxed" style={{ color: tpl.color, opacity: 0.75 }}>{tpl.desc}</p>
             </div>
-            <div className="flex gap-1.5 mt-auto">
+            <div className="flex gap-2 mt-auto">
               <button type="button" onClick={() => onSelect(tpl.conteudo)}
-                className="flex-1 text-[11px] py-1.5 rounded-lg font-medium"
+                className="flex-1 text-[12px] py-2 rounded-xl font-medium"
                 style={{ background: tpl.color, color: "#fff", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-                Usar
+                Usar este
               </button>
               <button type="button" onClick={() => setPreview(tpl)}
-                className="text-[11px] py-1.5 px-2.5 rounded-lg"
-                style={{ background: "transparent", border: `0.5px solid ${tpl.color}55`, color: tpl.color, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-                Ver
+                className="text-[12px] py-2 px-3.5 rounded-xl"
+                style={{ background: "transparent", border: `1px solid ${tpl.color}66`, color: tpl.color, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                Ver exemplo
               </button>
             </div>
           </div>
