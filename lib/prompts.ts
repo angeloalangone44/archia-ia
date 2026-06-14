@@ -1,4 +1,4 @@
-export const SYSTEM_BASE = `Você é um assistente especializado em arquitetura e projetos residenciais e comerciais no Brasil. Tem profundo conhecimento em normas ABNT (NBR 9050, NBR 6118, NBR 15575 e outras relevantes), materiais de construção, acabamentos e práticas do mercado brasileiro.
+﻿export const SYSTEM_BASE = `Você é um assistente especializado em arquitetura e projetos residenciais e comerciais no Brasil. Tem profundo conhecimento em normas ABNT (NBR 9050, NBR 6118, NBR 15575 e outras relevantes), materiais de construção, acabamentos e práticas do mercado brasileiro.
 
 Seu papel é gerar documentos técnicos precisos, bem estruturados e profissionais para escritórios de arquitetura. Use terminologia técnica correta. Formate os documentos em Markdown com seções bem definidas (## para títulos de seção, ### para subseções, **negrito** para ênfase). Escreva sempre em português brasileiro.`;
 
@@ -35,6 +35,8 @@ export type BriefingDados = {
   corQueNaoQuer: string;
   // referências visuais (links separados por \n)
   referenciasVisuais?: string;
+  // análise de imagens de referência (texto gerado pelo Claude Vision)
+  analiseImagens?: string;
 };
 
 export type SpecsDados = {
@@ -117,6 +119,9 @@ Use linguagem objetiva e profissional. O relatório é para uso interno do arqui
     const referenciasBlock = dados.referenciasVisuais?.trim()
       ? `## REFERÊNCIAS VISUAIS FORNECIDAS PELO CLIENTE:\n${dados.referenciasVisuais.split("\n").filter(Boolean).map((l) => `- ${l}`).join("\n")}\n\nMencione essas referências na seção de CONCEITO NORTEADOR como "Referências visuais fornecidas pelo cliente". Não tente acessar os links — liste-os como fornecidos e comente que o arquiteto deve consultá-los diretamente.`
       : "";
+    const analiseImagensBlock = dados.analiseImagens?.trim()
+      ? `## ANÁLISE DE REFERÊNCIAS VISUAIS (imagens enviadas pelo cliente):\n${dados.analiseImagens}\n\nUse esta análise na seção de CONCEITO NORTEADOR e em cada ambiente relevante: incorpore a paleta de cores identificada, os materiais reconhecidos e a atmosfera geral. Inclua a seção ## ANÁLISE DE REFERÊNCIAS VISUAIS antes do CONCEITO NORTEADOR.`
+      : "";
 
     const formatoInstrucao = dados.modeloBriefing
       ? `MODELO DE BRIEFING DO ESCRITÓRIO — use como referência de estrutura, formato e tom. Reproduza o mesmo padrão substituindo pelos dados deste projeto:\n\n---\n${dados.modeloBriefing}\n---`
@@ -135,6 +140,8 @@ Use linguagem objetiva e profissional. O relatório é para uso interno do arqui
 ${formatoInstrucao}
 
 ${referenciasBlock}
+
+${analiseImagensBlock}
 
 ## INFORMAÇÕES GERAIS
 - **Tipo:** ${dados.tipoDetalhado}
@@ -271,3 +278,4 @@ export function buildSystemPrompt(extraContext?: string): string {
   if (!extraContext) return SYSTEM_BASE;
   return `${SYSTEM_BASE}\n\nCONTEXTO DO ESCRITÓRIO:\n${extraContext}`;
 }
+

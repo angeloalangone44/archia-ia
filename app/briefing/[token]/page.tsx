@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function ClientBriefingPage() {
   const params = useParams();
@@ -10,6 +10,14 @@ export default function ClientBriefingPage() {
 
   const [enviado, setEnviado] = useState(false);
   const [linkResposta, setLinkResposta] = useState("");
+
+  // image upload state
+  type TokenImage = { id: string; base64: string; mediaType: string; name: string; previewUrl: string };
+  const [tokenImages, setTokenImages] = useState<TokenImage[]>([]);
+  const [tokenAnalysis, setTokenAnalysis] = useState("");
+  const [analyzingToken, setAnalyzingToken] = useState(false);
+  const [tokenAnalysisError, setTokenAnalysisError] = useState("");
+  const tokenImgRef = useRef<HTMLInputElement>(null);
 
   const [f, setF] = useState({
     nome: "",
@@ -59,6 +67,55 @@ export default function ClientBriefingPage() {
     }));
   }
 
+  async function handleTokenImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter((f) => f.size <= 3 * 1024 * 1024 && /^image\/(jpeg|png|webp)$/.test(f.type));
+    const remaining = 8 - tokenImages.length;
+    const toAdd = files.slice(0, remaining);
+    if (!toAdd.length) return;
+    const newImgs = await Promise.all(toAdd.map((f) => new Promise<TokenImage>((res) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        res({ id: crypto.randomUUID(), base64: dataUrl.split(",")[1], mediaType: f.type, name: f.name, previewUrl: dataUrl });
+      };
+      reader.readAsDataURL(f);
+    })));
+    const next = [...tokenImages, ...newImgs];
+    setTokenImages(next);
+    e.target.value = "";
+    // analyze all images
+    setAnalyzingToken(true);
+    setTokenAnalysisError("");
+    try {
+      const res = await fetch("/api/analyze-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: next.map((i) => ({ base64: i.base64, mediaType: i.mediaType })) }),
+      });
+      const json = await res.json() as { analysis?: string; error?: string };
+      if (!res.ok || json.error) setTokenAnalysisError(json.error ?? "Erro ao analisar.");
+      else setTokenAnalysis(json.analysis ?? "");
+    } catch { setTokenAnalysisError("Não foi possível analisar as imagens."); }
+    finally { setAnalyzingToken(false); }
+  }
+
+  async function handleRemoveTokenImage(id: string) {
+    const next = tokenImages.filter((i) => i.id !== id);
+    setTokenImages(next);
+    if (next.length === 0) { setTokenAnalysis(""); return; }
+    setAnalyzingToken(true);
+    try {
+      const res = await fetch("/api/analyze-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: next.map((i) => ({ base64: i.base64, mediaType: i.mediaType })) }),
+      });
+      const json = await res.json() as { analysis?: string; error?: string };
+      if (res.ok && !json.error) setTokenAnalysis(json.analysis ?? "");
+    } catch { /* ignore */ }
+    finally { setAnalyzingToken(false); }
+  }
+
   function handleEnviar() {
     if (!f.nome || !f.tipoDetalhado) {
       alert("Por favor, preencha seu nome e o tipo de projeto.");
@@ -80,6 +137,7 @@ export default function ClientBriefingPage() {
       selectedRooms: JSON.stringify(f.selectedRooms),
       referenciasVisuais: JSON.stringify(f.referenciasVisuais.filter((l) => l.trim() !== "")),
       obsGerais: f.obsGerais,
+      ...(tokenAnalysis ? { analiseImagens: tokenAnalysis } : {}),
     };
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     const link = `${window.location.origin}/app/briefing#client=${encoded}`;
@@ -142,6 +200,7 @@ export default function ClientBriefingPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#F5F2ED", padding: "32px 16px" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -359,6 +418,67 @@ export default function ClientBriefingPage() {
               o projeto — seu arquiteto vai usar para entender seu estilo.
             </p>
           </div>
+
+          {/* Upload de imagens */}
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={sectionTitle}>Fotos de referência (opcional)</h2>
+            <p style={{ fontSize: 13, color: "#4C4C4C", marginBottom: 14, lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif" }}>
+              Envie até 8 fotos de ambientes, projetos ou estilos que você admira — isso ajuda muito o arquiteto a entender o seu gosto.
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+              {tokenImages.map((img) => (
+                <div key={img.id} style={{ position: "relative" }}>
+                  <img src={img.previewUrl} alt={img.name} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 10, border: "1px solid #D8D3CB" }} />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTokenImage(img.id)}
+                    style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#DC2626", color: "#fff", border: "none", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+                    ×
+                  </button>
+                </div>
+              ))}
+              {tokenImages.length < 8 && (
+                <button
+                  type="button"
+                  onClick={() => tokenImgRef.current?.click()}
+                  style={{ width: 80, height: 80, borderRadius: 10, border: "1.5px dashed #D8D3CB", background: "#F5F2ED", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: "#8B8070", fontFamily: "'DM Sans', sans-serif", fontSize: 11 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ width: 22, height: 22 }}><path d="M12 4v16m8-8H4"/></svg>
+                  Adicionar
+                </button>
+              )}
+            </div>
+            <input ref={tokenImgRef} type="file" multiple accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={handleTokenImages} />
+
+            {analyzingToken && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#6B6B6B", padding: "10px 14px", borderRadius: 10, background: "#F5F2ED", marginBottom: 10 }}>
+                <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid #D8D3CB", borderTopColor: "#2D5A3D", animation: "spin 0.8s linear infinite" }} />
+                Analisando imagens com IA...
+              </div>
+            )}
+
+            {!analyzingToken && tokenAnalysisError && (
+              <div style={{ fontSize: 12, color: "#C0392B", padding: "10px 14px", borderRadius: 10, background: "#FDEDEC", border: "1px solid #F5B7B1", marginBottom: 10 }}>
+                {tokenAnalysisError}
+              </div>
+            )}
+
+            {!analyzingToken && tokenAnalysis && (
+              <div style={{ padding: "14px 16px", borderRadius: 12, background: "#F0F8F2", border: "1px solid #A8D5B2", marginBottom: 10 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#2D5A3D", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>
+                  📸 O que identificamos nas suas referências:
+                </p>
+                <p style={{ fontSize: 13, color: "#3A5A3A", lineHeight: 1.65, whiteSpace: "pre-wrap", fontFamily: "'DM Sans', sans-serif", margin: 0 }}>
+                  {tokenAnalysis}
+                </p>
+              </div>
+            )}
+
+            <p style={{ fontSize: 12, color: "#9B9B9B", lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif" }}>
+              As imagens são analisadas para gerar este relatório e não são armazenadas (LGPD). Máx. 8 fotos · JPG, PNG ou WebP · até 3MB cada.
+            </p>
+          </div>
+
+          <hr style={{ border: "none", borderTop: "1px solid #E5E0D8", margin: "24px 0" }} />
 
           {/* Obs */}
           <div style={{ marginBottom: 28 }}>

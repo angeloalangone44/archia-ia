@@ -316,6 +316,115 @@ type Step1 = {
   referenciasVisuais: string[];
 };
 
+/* ── upload de imagens de referência ────────────────────── */
+
+const MAX_REF_IMAGES = 8;
+const MAX_IMG_SIZE = 3 * 1024 * 1024;
+
+type RefImage = { id: string; base64: string; mediaType: string; name: string; previewUrl: string };
+
+function ImageUploadRef({
+  images,
+  analysis,
+  analyzing,
+  error,
+  onAdd,
+  onRemove,
+}: {
+  images: RefImage[];
+  analysis: string | null;
+  analyzing: boolean;
+  error: string | null;
+  onAdd: (imgs: RefImage[]) => void;
+  onRemove: (id: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    const remaining = MAX_REF_IMAGES - images.length;
+    const valid = files.slice(0, remaining).filter((f) => f.size <= MAX_IMG_SIZE && /^image\/(jpeg|png|webp)$/.test(f.type));
+    if (!valid.length) return;
+    Promise.all(
+      valid.map(
+        (f) =>
+          new Promise<RefImage>((res) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const dataUrl = ev.target?.result as string;
+              res({ id: crypto.randomUUID(), base64: dataUrl.split(",")[1], mediaType: f.type, name: f.name, previewUrl: dataUrl });
+            };
+            reader.readAsDataURL(f);
+          }),
+      ),
+    ).then((newImgs) => onAdd(newImgs));
+    e.target.value = "";
+  }
+
+  return (
+    <div>
+      {/* upload area */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {images.map((img) => (
+          <div key={img.id} className="relative group" style={{ width: 72, height: 72 }}>
+            <img src={img.previewUrl} alt={img.name} style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10, border: "0.5px solid var(--border-strong)" }} />
+            <button
+              type="button"
+              onClick={() => onRemove(img.id)}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full hidden group-hover:flex items-center justify-center text-[10px]"
+              style={{ background: "#DC2626", color: "#fff", border: "none", cursor: "pointer" }}>
+              ×
+            </button>
+          </div>
+        ))}
+        {images.length < MAX_REF_IMAGES && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-1 rounded-xl transition-colors hover:opacity-70"
+            style={{ width: 72, height: 72, border: "0.5px dashed var(--border-strong)", background: "var(--surface2)", cursor: "pointer", color: "var(--ink3)", fontFamily: "'DM Sans', sans-serif" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5"><path d="M12 4v16m8-8H4"/></svg>
+            <span style={{ fontSize: 10 }}>Foto</span>
+          </button>
+        )}
+      </div>
+
+      <input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFiles} />
+
+      {/* analysis result */}
+      {analyzing && (
+        <div className="flex items-center gap-2 text-[12px] px-3 py-2.5 rounded-xl mb-2" style={{ background: "var(--surface2)", color: "var(--ink3)" }}>
+          <span className="w-3.5 h-3.5 rounded-full border-2 animate-spin" style={{ borderColor: "var(--border-strong)", borderTopColor: "var(--accent)" }} />
+          Analisando imagens com IA...
+        </div>
+      )}
+
+      {!analyzing && error && (
+        <div className="flex items-center gap-2 text-[12px] px-3 py-2 rounded-xl mb-2" style={{ background: "#FDEDEC", color: "#C0392B", border: "0.5px solid #F5B7B1" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+          {error}
+        </div>
+      )}
+
+      {!analyzing && analysis && (
+        <div className="rounded-xl p-3.5 mb-2" style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)" }}>
+          <p className="text-[11px] font-medium uppercase tracking-wider mb-2" style={{ color: "var(--accent)" }}>
+            📸 O que identificamos nas suas referências:
+          </p>
+          <p className="text-[12px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif" }}>
+            {analysis}
+          </p>
+        </div>
+      )}
+
+      {/* privacy notice */}
+      <p className="text-[11px] leading-relaxed" style={{ color: "var(--ink3)" }}>
+        As imagens são analisadas para gerar este relatório e não são armazenadas. Máx. {MAX_REF_IMAGES} imagens · JPG, PNG ou WebP · até 3MB cada.
+      </p>
+    </div>
+  );
+}
+
 /* ── campo de múltiplos links ───────────────────────────── */
 
 function MultiLinkField({ links, onChange }: { links: string[]; onChange: (links: string[]) => void }) {
@@ -1171,6 +1280,7 @@ function serializeRooms(allIds: string[], roomData: Record<string, RoomFields>):
       `[${label.toUpperCase()}]`,
       isQto && d.tipoQuarto   && `• Tipo: ${d.tipoQuarto}`,
       d.estilo                && `• Estilo: ${d.estilo}`,
+      d.estiloTexto           && `• Estilo (detalhamento): ${d.estiloTexto}`,
       d.paredeRevestimento    && `• Revestimento de parede: ${d.paredeRevestimento}`,
       d.pisoRevestimento      && `• Revestimento de piso: ${d.pisoRevestimento}`,
       d.iluminacao            && `• Iluminação: ${d.iluminacao}`,
@@ -1197,7 +1307,9 @@ function serializeRooms(allIds: string[], roomData: Record<string, RoomFields>):
       base === "varanda" && d.fechamentoVaranda && `• Fechamento de varanda: ${d.fechamentoVaranda}`,
       base === "varanda" && d.piscina && `• Piscina: ${d.piscina}`,
       d.itens.length > 0 && `• Itens desejados: ${d.itens.join(", ")}`,
-      d.aproveitarMoveis && `• Móveis existentes: ${d.aproveitarMoveis}${d.aproveitarMoveisDetalhe ? ` — ${d.aproveitarMoveisDetalhe}` : ""}`,
+      d.aproveitarMoveis && `• Móveis existentes: ${d.aproveitarMoveis}`,
+      d.aproveitarMoveis === "Sim" && (d.moveisDetalhados ?? []).length > 0 &&
+        `• Móveis a manter:\n${(d.moveisDetalhados ?? []).map((m) => `  - ${m.descricao}${m.medidas ? ` (${m.medidas})` : ""}${m.intervencoes.length ? ` — ${m.intervencoes.join(", ")}` : ""}`).join("\n")}`,
       d.moveisNovos && `• Móveis novos: ${d.moveisNovos}${d.moveisNovosDetalhe ? ` — ${d.moveisNovosDetalhe}` : ""}`,
       d.obs && `• Observações: ${d.obs}`,
     ].filter(Boolean);
@@ -1310,6 +1422,10 @@ export default function BriefingPage() {
   const [roomData, setRoomData] = useState<Record<string, RoomFields>>({});
 
   const [temaDocumento, setTemaDocumento] = useState<TemaDocumento>("classico");
+  const [refImages, setRefImages] = useState<RefImage[]>([]);
+  const [imageAnalysis, setImageAnalysis] = useState<string | null>(null);
+  const [analyzingImages, setAnalyzingImages] = useState(false);
+  const [imageAnalysisError, setImageAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(BRIEFING_MODEL_KEY);
@@ -1321,6 +1437,44 @@ export default function BriefingPage() {
   useEffect(() => {
     localStorage.setItem(BRIEFING_MODEL_KEY, s1.modeloBriefing);
   }, [s1.modeloBriefing]);
+
+  async function handleImagesAdd(newImgs: RefImage[]) {
+    const next = [...refImages, ...newImgs];
+    setRefImages(next);
+    if (next.length === 0) { setImageAnalysis(null); return; }
+    setAnalyzingImages(true);
+    setImageAnalysisError(null);
+    try {
+      const res = await fetch("/api/analyze-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: next.map((i) => ({ base64: i.base64, mediaType: i.mediaType })) }),
+      });
+      const json = await res.json() as { analysis?: string; error?: string };
+      if (!res.ok || json.error) { setImageAnalysisError(json.error ?? "Erro ao analisar imagens."); }
+      else setImageAnalysis(json.analysis ?? null);
+    } catch { setImageAnalysisError("Não foi possível analisar as imagens."); }
+    finally { setAnalyzingImages(false); }
+  }
+
+  async function handleImageRemove(id: string) {
+    const next = refImages.filter((i) => i.id !== id);
+    setRefImages(next);
+    if (next.length === 0) { setImageAnalysis(null); setImageAnalysisError(null); return; }
+    setAnalyzingImages(true);
+    setImageAnalysisError(null);
+    try {
+      const res = await fetch("/api/analyze-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: next.map((i) => ({ base64: i.base64, mediaType: i.mediaType })) }),
+      });
+      const json = await res.json() as { analysis?: string; error?: string };
+      if (!res.ok || json.error) { setImageAnalysisError(json.error ?? "Erro ao analisar imagens."); }
+      else setImageAnalysis(json.analysis ?? null);
+    } catch { setImageAnalysisError("Não foi possível analisar as imagens."); }
+    finally { setAnalyzingImages(false); }
+  }
 
   function handleSelectProject(id: string) {
     setProjetoId(id);
@@ -1381,6 +1535,9 @@ export default function BriefingPage() {
         ? JSON.parse(data.referenciasVisuais) as string[]
         : prev.referenciasVisuais,
     }));
+    if (data.analiseImagens) {
+      setImageAnalysis(data.analiseImagens);
+    }
     if (data.selectedRooms) {
       try {
         const rooms = JSON.parse(data.selectedRooms) as string[];
@@ -1447,6 +1604,7 @@ export default function BriefingPage() {
       ...s1,
       ambientesDetalhados: serializeRooms(allInstanceIds, roomData),
       referenciasVisuais: linksValidos.join("\n"),
+      analiseImagens: imageAnalysis ?? "",
     };
     generate("briefing", dados, s1.cliente || "Briefing", (fullText) => {
       const existing = projetoId ? getArchiaProjectById(projetoId) : null;
@@ -1597,6 +1755,16 @@ export default function BriefingPage() {
               <MultiLinkField
                 links={s1.referenciasVisuais}
                 onChange={(links) => setS1((prev) => ({ ...prev, referenciasVisuais: links }))}
+              />
+            </FormGroup>
+            <FormGroup label="Imagens de referência (opcional)" full>
+              <ImageUploadRef
+                images={refImages}
+                analysis={imageAnalysis}
+                analyzing={analyzingImages}
+                error={imageAnalysisError}
+                onAdd={handleImagesAdd}
+                onRemove={handleImageRemove}
               />
             </FormGroup>
           </div>
