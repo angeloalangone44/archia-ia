@@ -16,7 +16,9 @@ import {
   getArchiaProjects,
   deleteArchiaProject,
   updateAmbienteValorEstimado,
+  updateLeadStatus,
   type ArchiaProjetoUnificado,
+  type LeadStatus,
   AMBIENTE_LABELS,
 } from "@/lib/archia-project";
 import { getCalculoByProjeto, formatCurrency, type CalculoSalvo } from "@/lib/calculadora";
@@ -30,6 +32,79 @@ function sanitize(text: string) { return text.replace(BOM_RE, ""); }
 function renderHtml(text: string): string { return String(marked.parse(sanitize(text))); }
 function initials(nome: string): string {
   return nome.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+}
+
+/* ── lead status ──────────────────────────────────────────── */
+
+const LEAD_LABEL: Record<LeadStatus, string> = {
+  aguardando: "Aguardando",
+  negociacao: "Em negociação",
+  convertido: "Convertido",
+  perdido: "Perdido",
+};
+const LEAD_COLOR: Record<LeadStatus, { bg: string; color: string; border: string }> = {
+  aguardando:  { bg: "#FDF3DC", color: "#8B6914", border: "#E8D08A" },
+  negociacao:  { bg: "#EAF2EC", color: "#2D5A3D", border: "#A8D5B2" },
+  convertido:  { bg: "#E8EFF6", color: "#1A3A5C", border: "#A0BDD4" },
+  perdido:     { bg: "#F5F0EC", color: "#6B6760", border: "#C8C4BC" },
+};
+
+function LeadStatusBadge({ projetoId, status, onChange }: {
+  projetoId: string;
+  status: LeadStatus | undefined;
+  onChange: (s: LeadStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const s = status ?? "aguardando";
+  const c = LEAD_COLOR[s];
+  return (
+    <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1"
+        style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}`, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+        {LEAD_LABEL[s]}
+        <svg viewBox="0 0 10 10" fill="currentColor" width={8} height={8}>
+          <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth={1.2} fill="none" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 rounded-xl overflow-hidden"
+          style={{ background: "var(--surface)", border: "0.5px solid var(--border-strong)", boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 140 }}>
+          {(Object.keys(LEAD_LABEL) as LeadStatus[]).map((opt) => (
+            <button key={opt} onClick={() => { updateLeadStatus(projetoId, opt); onChange(opt); setOpen(false); }}
+              className="w-full text-left text-[12px] px-3 py-2 flex items-center gap-2 hover:opacity-80"
+              style={{ background: opt === s ? LEAD_COLOR[opt].bg : "transparent", color: LEAD_COLOR[opt].color, border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: LEAD_COLOR[opt].color }} />
+              {LEAD_LABEL[opt]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FollowUpIndicator({ projetoId, status, updatedAt }: {
+  projetoId: string;
+  status: LeadStatus | undefined;
+  updatedAt: string;
+}) {
+  if (status !== "aguardando" && status !== "negociacao") return null;
+  const days = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
+  if (days < 5) return null;
+  const plannerUrl = `/app/planner?projeto=${projetoId}`;
+  return (
+    <div className="flex items-center gap-1 mt-0.5" onClick={(e) => e.stopPropagation()}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#B7791F" strokeWidth={2} width={11} height={11}>
+        <circle cx="12" cy="12" r="10" /><path d="M12 8v4m0 4h.01" />
+      </svg>
+      <span className="text-[10px]" style={{ color: "#B7791F" }}>Sem atualização há {days} dias</span>
+      <Link href={plannerUrl} className="text-[10px] underline" style={{ color: "#B7791F" }}>
+        Agendar follow-up
+      </Link>
+    </div>
+  );
 }
 
 /* ── CSS de impressão ─────────────────────────────────────── */
@@ -819,16 +894,25 @@ function ProximosCompromissos({ projetoId }: { projetoId: string }) {
 
 /* ── lista principal ──────────────────────────────────────── */
 
+type LeadFilter = "todos" | "leads" | "ativos";
+
 export default function ProjectPanel() {
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [projetosV2, setProjetosV2] = useState<ArchiaProjetoUnificado[]>([]);
   const [selected, setSelected] = useState<Projeto | null>(null);
   const [selectedV2, setSelectedV2] = useState<ArchiaProjetoUnificado | null>(null);
+  const [leadFilter, setLeadFilter] = useState<LeadFilter>("todos");
 
   useEffect(() => {
     setProjetos(getProjects());
     setProjetosV2(getArchiaProjects());
   }, []);
+
+  function handleLeadChange(projetoId: string, status: LeadStatus) {
+    setProjetosV2((prev) => prev.map((p) =>
+      p.id === projetoId ? { ...p, leadStatus: status, leadStatusUpdatedAt: new Date().toISOString() } : p
+    ));
+  }
 
   function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -876,18 +960,52 @@ export default function ProjectPanel() {
     );
   }
 
+  const filteredV2 = projetosV2.filter((p) => {
+    const s = p.leadStatus ?? "aguardando";
+    if (leadFilter === "leads") return s === "aguardando" || s === "negociacao";
+    if (leadFilter === "ativos") return s === "convertido";
+    return true;
+  });
+
+  const FILTER_LABELS: Record<LeadFilter, string> = {
+    todos: "Todos",
+    leads: "Leads em negociação",
+    ativos: "Projetos ativos",
+  };
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Filtros de status */}
+      {projetosV2.length > 0 && (
+        <div className="flex gap-2 mb-1">
+          {(Object.keys(FILTER_LABELS) as LeadFilter[]).map((f) => (
+            <button key={f} onClick={() => setLeadFilter(f)}
+              className="text-[11px] px-3 py-1 rounded-full transition-colors"
+              style={{
+                background: leadFilter === f ? "var(--accent)" : "var(--surface2)",
+                color: leadFilter === f ? "#fff" : "var(--ink3)",
+                border: leadFilter === f ? "none" : "0.5px solid var(--border-strong)",
+                cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              }}>
+              {FILTER_LABELS[f]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Projetos v2 (unificados) */}
-      {projetosV2.map((p) => {
+      {filteredV2.map((p) => {
         const docCount = Object.values(p.documentos).filter(Boolean).length;
         const { concluidas, total: stageTotal, atual } = getStageProgress(p.id);
         const pct = stageTotal > 0 ? (concluidas / stageTotal) * 100 : 0;
         const nextC = getNextCompromisso(p.id);
+        const s = p.leadStatus ?? "aguardando";
+        const followUpDays = Math.floor((Date.now() - new Date(p.leadStatusUpdatedAt ?? p.updatedAt).getTime()) / 86400000);
+        const hasFollowUp = (s === "aguardando" || s === "negociacao") && followUpDays >= 5;
         return (
           <div key={p.id} onClick={() => setSelectedV2(p)}
             className="flex items-start gap-4 rounded-2xl px-5 py-4 cursor-pointer transition-all hover:-translate-y-px"
-            style={{ background: "var(--surface)", border: "0.5px solid var(--border)" }}
+            style={{ background: "var(--surface)", border: hasFollowUp ? "1px solid #E8D08A" : "0.5px solid var(--border)" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.06)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}>
             {/* Avatar */}
@@ -918,7 +1036,19 @@ export default function ProjectPanel() {
                   {C_TIPO_LABEL[nextC.tipo]} · {relativeDay(nextC.data)}
                 </div>
               )}
+              <FollowUpIndicator
+                projetoId={p.id}
+                status={p.leadStatus}
+                updatedAt={p.leadStatusUpdatedAt ?? p.updatedAt}
+              />
             </div>
+
+            {/* Lead status badge */}
+            <LeadStatusBadge
+              projetoId={p.id}
+              status={p.leadStatus}
+              onChange={(s) => handleLeadChange(p.id, s)}
+            />
 
             {/* Doc count badge */}
             <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full flex-shrink-0" style={{ background: "#E8EFF6", color: "#1A3A5C" }}>

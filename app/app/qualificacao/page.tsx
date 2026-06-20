@@ -3,7 +3,7 @@
 import DocumentForm, { FormGrid, FormGroup, Input, Select, Textarea } from "@/components/DocumentForm";
 import StreamingOutput from "@/components/StreamingOutput";
 import { useGenerate } from "@/lib/useGenerate";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ── tipos ──────────────────────────────────────────────── */
 
@@ -21,6 +21,87 @@ type Fields = {
 type AutoStatus = "idle" | "loading" | "success" | "error";
 type AutoFilled = Partial<Record<keyof Fields, boolean>>;
 type FillMode = "manual" | "import" | null;
+
+/* ── botão de link para cliente ────────────────────────── */
+
+function QualClientLinkButton() {
+  const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  function handleGenerate() {
+    const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    setLink(`${window.location.origin}/qualificacao/${token}`);
+  }
+  function handleCopy() {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+  if (link) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl px-3 py-2 flex-shrink-0"
+        style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)", maxWidth: 320 }}>
+        <span className="text-[11px] truncate flex-1" style={{ color: "var(--ink3)", fontFamily: "monospace" }}>{link}</span>
+        <button onClick={handleCopy} className="flex-shrink-0 text-[11px] px-2.5 py-1 rounded-lg text-white"
+          style={{ background: "var(--accent)", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          {copied ? "Copiado!" : "Copiar"}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button type="button" onClick={handleGenerate}
+      className="flex-shrink-0 flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-lg transition-colors"
+      style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)", color: "var(--ink2)", fontFamily: "'DM Sans', sans-serif", cursor: "pointer", whiteSpace: "nowrap" }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+      </svg>
+      Formulário para o cliente
+    </button>
+  );
+}
+
+/* ── banner de dados do cliente ─────────────────────────── */
+
+function QualClientDataBanner({ onLoad }: { onLoad: (data: Record<string, string>) => void }) {
+  const [show, setShow] = useState(false);
+  const [pendingData, setPendingData] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (hash.startsWith("#client=")) {
+      try {
+        const decoded = JSON.parse(atob(hash.slice("#client=".length)));
+        setPendingData(decoded);
+        setShow(true);
+        window.history.replaceState(null, "", window.location.pathname);
+      } catch { /* ignore */ }
+    }
+  }, []);
+  if (!show || !pendingData) return null;
+  return (
+    <div className="mb-5 rounded-xl px-4 py-3 flex items-start gap-3"
+      style={{ background: "#EAF2EC", border: "1px solid #A8D5B2" }}>
+      <div className="text-lg">📋</div>
+      <div className="flex-1">
+        <p className="text-[13px] font-medium" style={{ color: "#1A3A1A" }}>Cliente preencheu a qualificação — carregar respostas?</p>
+        <p className="text-[11px] mt-0.5" style={{ color: "#3A5A3A" }}>
+          {pendingData.nome ? `${pendingData.nome} · ` : ""}{Object.keys(pendingData).length} campos preenchidos
+        </p>
+        <div className="flex gap-2 mt-2">
+          <button onClick={() => { onLoad(pendingData); setShow(false); }} className="text-[12px] px-3 py-1.5 rounded-lg text-white"
+            style={{ background: "#2D5A3D", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Carregar respostas
+          </button>
+          <button onClick={() => setShow(false)} className="text-[12px] px-3 py-1.5 rounded-lg"
+            style={{ background: "transparent", border: "0.5px solid #A8D5B2", color: "#3A5A3A", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+            Ignorar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ── seleção de modo ────────────────────────────────────── */
 
@@ -301,6 +382,21 @@ export default function QualificacaoPage() {
     setFillMode("manual");
   }
 
+  function handleLoadClientData(data: Record<string, string>) {
+    setF((prev) => ({
+      ...prev,
+      ...(data.nome && { nome: data.nome }),
+      ...(data.tipoProjetoQual && { tipoProjetoQual: data.tipoProjetoQual }),
+      ...(data.metragem && { metragem: data.metragem }),
+      ...(data.orcamentoFaixa && { orcamentoFaixa: data.orcamentoFaixa }),
+      ...(data.prazo && { prazo: data.prazo }),
+      ...(data.cidade && { cidade: data.cidade }),
+      ...(data.comoConheceu && { comoConheceu: data.comoConheceu }),
+      ...(data.descricao && { descricao: data.descricao }),
+    }));
+    if (fillMode === null) setFillMode("manual");
+  }
+
   function handleSubmit() {
     if (!f.nome || !f.tipoProjetoQual || !f.descricao) {
       alert("Preencha pelo menos: nome, tipo de projeto e descrição.");
@@ -321,14 +417,19 @@ export default function QualificacaoPage() {
 
   return (
     <div className="p-7 max-w-2xl">
-      <div className="mb-6">
-        <h1 className="text-sm font-medium" style={{ color: "var(--ink)" }}>
-          Qualificação de cliente
-        </h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--ink3)" }}>
-          Enviado pelo cliente antes da primeira reunião — a IA gera seu relatório de qualificação
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-sm font-medium" style={{ color: "var(--ink)" }}>
+            Qualificação de cliente
+          </h1>
+          <p className="text-xs mt-0.5" style={{ color: "var(--ink3)" }}>
+            Enviado pelo cliente antes da primeira reunião — a IA gera seu relatório de qualificação
+          </p>
+        </div>
+        <QualClientLinkButton />
       </div>
+
+      <QualClientDataBanner onLoad={handleLoadClientData} />
 
       {/* ── Seletor de modo ─────────────────────────────── */}
       {fillMode === null && <ModePicker onSelect={setFillMode} />}
@@ -377,17 +478,17 @@ export default function QualificacaoPage() {
             </FormGroup>
 
             <FormGroup label={<Label field="orcamentoFaixa">Orçamento disponível</Label>}>
-              <Select value={f.orcamentoFaixa} onChange={set("orcamentoFaixa")} style={autoStyle("orcamentoFaixa")}>
-                <option value="">Selecione uma faixa...</option>
-                <option>Até R$ 100.000</option>
-                <option>R$ 100.000 – R$ 300.000</option>
-                <option>R$ 300.000 – R$ 500.000</option>
-                <option>Acima de R$ 500.000</option>
-              </Select>
+              <Input placeholder="Ex: R$ 150.000 ou em torno de R$ 200–300k" value={f.orcamentoFaixa} onChange={set("orcamentoFaixa")} style={autoStyle("orcamentoFaixa")} />
+              <p className="text-[11px] mt-1.5 leading-snug" style={{ color: "var(--ink3)" }}>
+                Não se preocupe em ter certeza — uma estimativa inicial já ajuda.
+              </p>
             </FormGroup>
 
             <FormGroup label={<Label field="prazo">Prazo desejado</Label>}>
               <Input placeholder="Ex: 8 meses, início em março" value={f.prazo} onChange={set("prazo")} style={autoStyle("prazo")} />
+              <p className="text-[11px] mt-1.5 leading-snug" style={{ color: "var(--ink3)" }}>
+                Se não souber, deixe em branco — o arquiteto vai te orientar sobre prazos realistas.
+              </p>
             </FormGroup>
 
             <FormGroup label={<Label field="cidade">Cidade / bairro</Label>}>

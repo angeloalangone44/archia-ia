@@ -57,10 +57,14 @@ export type AmbienteData = {
   valoresEstimados: Record<string, string>;
 };
 
+export type LeadStatus = "aguardando" | "negociacao" | "convertido" | "perdido";
+
 export type ArchiaProjetoUnificado = {
   id: string;
   createdAt: string;
   updatedAt: string;
+  leadStatus?: LeadStatus;
+  leadStatusUpdatedAt?: string;
   cliente: {
     nome: string;
     localizacao: string;
@@ -113,6 +117,12 @@ export function saveArchiaProject(projeto: ArchiaProjetoUnificado): void {
 
 export function getArchiaProjectById(id: string): ArchiaProjetoUnificado | null {
   return getArchiaProjects().find((p) => p.id === id) ?? null;
+}
+
+export function updateLeadStatus(id: string, status: LeadStatus): void {
+  const p = getArchiaProjectById(id);
+  if (!p) return;
+  saveArchiaProject({ ...p, leadStatus: status, leadStatusUpdatedAt: new Date().toISOString() });
 }
 
 export function deleteArchiaProject(id: string): void {

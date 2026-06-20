@@ -466,6 +466,184 @@ function MultiLinkField({ links, onChange }: { links: string[]; onChange: (links
   );
 }
 
+/* ── seletor visual de tom de madeira ───────────────────── */
+
+const WOOD_SWATCHES = [
+  { value: "Clara (freijó, carvalho claro)", color: "#D4B896", label: "Clara", sub: "Freijó" },
+  { value: "Média (nogueira, tauari)",       color: "#A67C52", label: "Média", sub: "Nogueira" },
+  { value: "Escura (wengué, imbuia)",        color: "#5C4033", label: "Escura", sub: "Wengué" },
+  { value: "Sem madeira",                    color: "#C8C4BC", label: "Sem madeira", sub: "" },
+];
+
+function WoodSwatchPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex gap-2 flex-wrap py-1">
+      {WOOD_SWATCHES.map((s) => {
+        const active = value === s.value;
+        return (
+          <button key={s.value} type="button" onClick={() => onChange(active ? "" : s.value)}
+            title={s.value}
+            className="flex flex-col items-center gap-1 rounded-xl p-2 transition-all"
+            style={{
+              border: active ? `2px solid ${s.color}` : "1.5px solid var(--border-strong)",
+              background: active ? `${s.color}22` : "var(--surface)",
+              cursor: "pointer", minWidth: 58,
+            }}>
+            <div className="rounded-full" style={{ width: 28, height: 28, background: s.color, border: "1px solid rgba(0,0,0,0.1)" }} />
+            <span className="text-[11px] font-medium leading-none" style={{ color: active ? s.color : "var(--ink2)" }}>{s.label}</span>
+            {s.sub && <span className="text-[9px] leading-none" style={{ color: "var(--ink3)" }}>{s.sub}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── seletor visual com ícones SVG ─────────────────────── */
+
+type VisualOption = { value: string; label: string; desc: string; icon: React.ReactNode };
+
+function VisualOptionPicker({ value, options, onChange }: {
+  value: string;
+  options: VisualOption[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex gap-2 flex-wrap py-1">
+      {options.map((o) => {
+        const active = value === o.value;
+        return (
+          <button key={o.value} type="button" onClick={() => onChange(active ? "" : o.value)}
+            title={o.value}
+            className="flex flex-col items-center gap-1.5 rounded-xl p-2.5 transition-all"
+            style={{
+              border: active ? "2px solid var(--accent)" : "1.5px solid var(--border-strong)",
+              background: active ? "var(--accent-light)" : "var(--surface)",
+              cursor: "pointer", minWidth: 70, maxWidth: 82,
+            }}>
+            <div style={{ color: active ? "var(--accent)" : "var(--ink3)", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {o.icon}
+            </div>
+            <span className="text-[10px] font-medium text-center leading-tight" style={{ color: active ? "var(--accent)" : "var(--ink2)" }}>{o.label}</span>
+            <span className="text-[9px] text-center leading-tight" style={{ color: "var(--ink3)" }}>{o.desc}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const CUBA_BANHEIRO_OPTIONS: VisualOption[] = [
+  {
+    value: "Embutir", label: "Embutir", desc: "Encaixada na bancada",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="4" y="12" width="28" height="3" rx="1" />
+        <rect x="9" y="15" width="18" height="11" rx="2" />
+        <circle cx="18" cy="20" r="2" />
+      </svg>
+    ),
+  },
+  {
+    value: "Apoio", label: "Apoio", desc: "Elevada sobre bancada",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="4" y="22" width="28" height="3" rx="1" />
+        <ellipse cx="18" cy="16" rx="10" ry="6" />
+        <circle cx="18" cy="16" r="2" />
+        <path d="M18 22v-2" />
+      </svg>
+    ),
+  },
+  {
+    value: "Esculpida", label: "Esculpida", desc: "Integrada orgânica",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <path d="M4 22 Q10 10 18 12 Q26 14 32 22 Z" />
+        <circle cx="18" cy="18" r="2.5" />
+      </svg>
+    ),
+  },
+  {
+    value: "Sobrepor", label: "Sobrepor", desc: "Sobre a bancada",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="4" y="22" width="28" height="3" rx="1" />
+        <rect x="10" y="14" width="16" height="9" rx="3" />
+        <circle cx="18" cy="18" r="2" />
+      </svg>
+    ),
+  },
+  {
+    value: "Semi-encaixe", label: "Semi-encaixe", desc: "Meio embutida",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="4" y="18" width="28" height="3" rx="1" />
+        <rect x="10" y="13" width="16" height="9" rx="3" />
+        <circle cx="18" cy="18" r="2" />
+      </svg>
+    ),
+  },
+];
+
+const CUBA_COZINHA_OPTIONS: VisualOption[] = [
+  {
+    value: "Simples", label: "Simples", desc: "Uma cuba",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="4" y="12" width="28" height="3" rx="1" />
+        <rect x="8" y="15" width="20" height="12" rx="2" />
+        <circle cx="18" cy="21" r="2" />
+      </svg>
+    ),
+  },
+  {
+    value: "Dupla", label: "Dupla", desc: "Duas cubas",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="2" y="12" width="32" height="3" rx="1" />
+        <rect x="3" y="15" width="13" height="12" rx="2" />
+        <rect x="20" y="15" width="13" height="12" rx="2" />
+        <circle cx="9.5" cy="21" r="1.5" />
+        <circle cx="26.5" cy="21" r="1.5" />
+      </svg>
+    ),
+  },
+];
+
+const BACIA_OPTIONS: VisualOption[] = [
+  {
+    value: "Com caixa acoplada", label: "Com caixa", desc: "Caixa acoplada atrás",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="8" y="4" width="20" height="10" rx="2" />
+        <path d="M6 14h24v2H6z" />
+        <path d="M8 16 Q6 28 10 30 h16 Q30 28 28 16" />
+      </svg>
+    ),
+  },
+  {
+    value: "Sem caixa (acopla embutida)", label: "Sem caixa", desc: "Acopla embutida",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <path d="M4 14h28v2H4z" />
+        <path d="M8 16 Q6 28 10 30 h16 Q30 28 28 16" />
+        <path d="M14 14 V8 H22 V14" />
+      </svg>
+    ),
+  },
+  {
+    value: "Suspensa", label: "Suspensa", desc: "Fixada na parede",
+    icon: (
+      <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth={1.8} width={36} height={36}>
+        <rect x="2" y="4" width="5" height="28" rx="1" />
+        <path d="M7 14h5 Q10 20 14 22 h8 Q26 20 24 14 h5" />
+        <path d="M7 20 Q10 28 14 30 h8 Q26 28 29 20" />
+      </svg>
+    ),
+  },
+];
+
 /* ── linha de campo ─────────────────────────────────────── */
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -868,13 +1046,7 @@ function RoomForm({ fullId, label, data, onChange }: {
             </Select>
           </FieldRow>
           <FieldRow label="Tom de madeira">
-            <Select value={data.madeira} onChange={set("madeira")}>
-              <option value="">—</option>
-              <option>Clara (freijó, carvalho claro)</option>
-              <option>Média (nogueira, tauari)</option>
-              <option>Escura (wengué, imbuia)</option>
-              <option>Sem madeira</option>
-            </Select>
+            <WoodSwatchPicker value={data.madeira} onChange={(v) => onChange({ ...data, madeira: v })} />
           </FieldRow>
 
           {/* Quartos */}
@@ -907,11 +1079,7 @@ function RoomForm({ fullId, label, data, onChange }: {
           {isBanheiro && (
             <>
               <FieldRow label="Tipo de bacia">
-                <Select value={data.tipoBacia} onChange={set("tipoBacia")}>
-                  <option value="">—</option>
-                  <option>Com caixa acoplada</option><option>Sem caixa (acopla embutida)</option>
-                  <option>Suspensa</option><option>Manter existente</option>
-                </Select>
+                <VisualOptionPicker value={data.tipoBacia} options={BACIA_OPTIONS} onChange={(v) => onChange({ ...data, tipoBacia: v })} />
               </FieldRow>
               <FieldRow label="Cor da bacia">
                 <Select value={data.corBacia} onChange={set("corBacia")}>
@@ -920,11 +1088,7 @@ function RoomForm({ fullId, label, data, onChange }: {
                 </Select>
               </FieldRow>
               <FieldRow label="Tipo de cuba">
-                <Select value={data.tipoCuba} onChange={set("tipoCuba")}>
-                  <option value="">—</option>
-                  <option>Embutir</option><option>Apoio</option><option>Esculpida</option>
-                  <option>Sobrepor</option><option>Semi-encaixe</option>
-                </Select>
+                <VisualOptionPicker value={data.tipoCuba} options={CUBA_BANHEIRO_OPTIONS} onChange={(v) => onChange({ ...data, tipoCuba: v })} />
               </FieldRow>
               <FieldRow label="Tipo de torneira">
                 <Select value={data.tipoTorneira} onChange={set("tipoTorneira")}>
@@ -984,9 +1148,7 @@ function RoomForm({ fullId, label, data, onChange }: {
                 </Select>
               </FieldRow>
               <FieldRow label="Cuba">
-                <Select value={data.cubaCozinha} onChange={set("cubaCozinha")}>
-                  <option value="">—</option><option>Simples</option><option>Dupla</option>
-                </Select>
+                <VisualOptionPicker value={data.cubaCozinha} options={CUBA_COZINHA_OPTIONS} onChange={(v) => onChange({ ...data, cubaCozinha: v })} />
               </FieldRow>
               <FieldRow label="Material da bancada">
                 <Select value={data.materialBancadaCozinha} onChange={set("materialBancadaCozinha")}>
@@ -1595,29 +1757,46 @@ export default function BriefingPage() {
     });
   }
 
+  const [customRoomIds, setCustomRoomIds] = useState<string[]>([]);
+  const [customRoomLabels, setCustomRoomLabels] = useState<Record<string, string>>({});
+  const [addingCustom, setAddingCustom] = useState(false);
+  const [newCustomName, setNewCustomName] = useState("");
+  const customInputRef = useRef<HTMLInputElement>(null);
+
+  function handleAddCustomRoom() {
+    const name = newCustomName.trim();
+    if (!name) return;
+    const id = `custom_${customRoomIds.length}`;
+    setCustomRoomIds((prev) => [...prev, id]);
+    setCustomRoomLabels((prev) => ({ ...prev, [id]: name }));
+    setRoomData((prev) => ({ ...prev, [id]: emptyRoom(name) }));
+    setNewCustomName("");
+    setAddingCustom(false);
+  }
+
+  function handleRemoveCustomRoom(id: string) {
+    setCustomRoomIds((prev) => prev.filter((r) => r !== id));
+    setCustomRoomLabels((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setRoomData((prev) => { const n = { ...prev }; delete n[id]; return n; });
+  }
+
   const allInstanceIds = expandRooms(selectedRooms, roomQuantities);
+  const allFinalIds = [...allInstanceIds, ...customRoomIds];
 
   function handleGenerate() {
-    if (selectedRooms.length === 0) { alert("Selecione pelo menos um ambiente."); return; }
+    if (allFinalIds.length === 0) { alert("Selecione pelo menos um ambiente."); return; }
     const linksValidos = s1.referenciasVisuais.filter((l) => l.trim() !== "");
     const dados = {
       ...s1,
-      ambientesDetalhados: serializeRooms(allInstanceIds, roomData),
+      ambientesDetalhados: serializeRooms(allFinalIds, roomData),
       referenciasVisuais: linksValidos.join("\n"),
       analiseImagens: imageAnalysis ?? "",
     };
     generate("briefing", dados, s1.cliente || "Briefing", (fullText) => {
       const existing = projetoId ? getArchiaProjectById(projetoId) : null;
-      // Build ambientes object (only include used instance keys)
       const ambientesObj: Record<string, AmbienteData> = {};
-      for (const id of allInstanceIds) {
+      for (const id of allFinalIds) {
         if (roomData[id]) ambientesObj[id] = roomData[id];
-      }
-      // Also include simple rooms
-      for (const id of selectedRooms) {
-        if (!MULTI_ROOMS.includes(id as MultiRoomId) && roomData[id]) {
-          ambientesObj[id] = roomData[id];
-        }
       }
       const projeto: ArchiaProjetoUnificado = {
         id: existing?.id ?? crypto.randomUUID(),
@@ -1633,7 +1812,7 @@ export default function BriefingPage() {
         },
         projeto: { tipo: s1.tipoDetalhado, area: s1.area, orcamento: s1.orcamento, prazo: s1.prazo },
         ambientes: ambientesObj,
-        ambientesOrdem: allInstanceIds,
+        ambientesOrdem: allFinalIds,
         documentos: {
           ...(existing?.documentos ?? {}),
           briefing: { conteudo: fullText, data: new Date().toISOString() },
@@ -1854,15 +2033,74 @@ export default function BriefingPage() {
               );
             })}
           </div>
-          {allInstanceIds.length > 0 && (
-            <p className="text-xs mb-4" style={{ color: "var(--ink3)" }}>
-              {allInstanceIds.length} {allInstanceIds.length === 1 ? "ambiente selecionado" : "ambientes selecionados"}
+          {/* Ambientes personalizados */}
+          <div className="mt-3 flex flex-col gap-2">
+            {customRoomIds.map((id) => (
+              <div key={id} className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                style={{ border: "1.5px solid var(--accent)", background: "var(--accent-light)" }}>
+                <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                  style={{ background: "var(--accent)", border: "none" }}>
+                  <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth={1.5} strokeLinecap="round"/></svg>
+                </div>
+                <span className="text-[13px] flex-1" style={{ color: "var(--accent)", fontWeight: 500 }}>
+                  {customRoomLabels[id]}
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full"
+                  style={{ background: "var(--surface)", color: "var(--ink3)", border: "0.5px solid var(--border)" }}>
+                  personalizado
+                </span>
+                <button type="button" onClick={() => handleRemoveCustomRoom(id)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink3)", opacity: 0.5, fontFamily: "'DM Sans', sans-serif", fontSize: 16, lineHeight: 1 }}>
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Adicionar ambiente personalizado */}
+          <div className="mt-3">
+            {addingCustom ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={customInputRef}
+                  value={newCustomName}
+                  onChange={(e) => setNewCustomName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddCustomRoom(); if (e.key === "Escape") setAddingCustom(false); }}
+                  placeholder="Nome do ambiente (ex: Adega, Biblioteca...)"
+                  className="flex-1 text-[13px] px-3 py-2 rounded-xl"
+                  style={{ border: "1px solid var(--accent)", outline: "none", background: "var(--surface)", color: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}
+                  autoFocus
+                />
+                <button type="button" onClick={handleAddCustomRoom}
+                  className="text-[12px] px-3 py-2 rounded-xl text-white"
+                  style={{ background: "var(--accent)", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                  Adicionar
+                </button>
+                <button type="button" onClick={() => setAddingCustom(false)}
+                  className="text-[12px] px-3 py-2 rounded-xl"
+                  style={{ background: "var(--surface2)", border: "0.5px solid var(--border-strong)", cursor: "pointer", color: "var(--ink3)", fontFamily: "'DM Sans', sans-serif" }}>
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => { setAddingCustom(true); setTimeout(() => customInputRef.current?.focus(), 50); }}
+                className="flex items-center gap-2 text-[12px] px-4 py-2.5 rounded-xl w-full justify-center transition-colors hover:opacity-80"
+                style={{ border: "1px dashed var(--border-strong)", background: "transparent", color: "var(--ink3)", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path d="M12 5v14M5 12h14" /></svg>
+                Adicionar ambiente personalizado
+              </button>
+            )}
+          </div>
+
+          {allFinalIds.length > 0 && (
+            <p className="text-xs mb-4 mt-4" style={{ color: "var(--ink3)" }}>
+              {allFinalIds.length} {allFinalIds.length === 1 ? "ambiente selecionado" : "ambientes selecionados"}
             </p>
           )}
           <div className="flex justify-between">
             <button style={btnSecStyle} onClick={() => setStep(1)}>← Voltar</button>
             <button style={btnStyle} onClick={() => {
-              if (selectedRooms.length === 0) { alert("Selecione pelo menos um ambiente."); return; }
+              if (allFinalIds.length === 0) { alert("Selecione pelo menos um ambiente."); return; }
               setStep(3);
             }}>
               Preencher detalhes →
@@ -1875,11 +2113,11 @@ export default function BriefingPage() {
       {step === 3 && (
         <div>
           <p className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: "var(--ink3)" }}>Detalhes por ambiente</p>
-          {allInstanceIds.map((fullId) => (
+          {allFinalIds.map((fullId) => (
             <RoomForm
               key={fullId}
               fullId={fullId}
-              label={instanceLabel(fullId, roomData[fullId])}
+              label={customRoomLabels[fullId] ?? instanceLabel(fullId, roomData[fullId])}
               data={roomData[fullId] ?? emptyRoom()}
               onChange={(updated) => setRoomData((prev) => ({ ...prev, [fullId]: updated }))}
             />
