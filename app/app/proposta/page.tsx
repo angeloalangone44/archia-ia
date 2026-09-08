@@ -5,6 +5,7 @@ import DocumentForm, {
 } from "@/components/DocumentForm";
 import FileUploadField from "@/components/FileUploadField";
 import TemplateRenderer, { TemaPickerCompact } from "@/components/TemplateRenderer";
+import DocumentVersionPanel from "@/components/DocumentVersionPanel";
 import type { TemaDocumento } from "@/lib/pdf-themes";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
@@ -595,6 +596,7 @@ export default function PropostaPage() {
       </DocumentForm>
 
       <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} nomeEscritorio={f.nomeEscritorio} logoBase64={logoBase64} logoPosicao={logoPosicao} temaDocumento={temaDocumento} onTemaChange={setTemaDocumento} />
+      <DocumentVersionPanel projetoId={projetoId} tipo="proposta" pendingText={text} isStreaming={isLoading} />
     </div>
   );
 }

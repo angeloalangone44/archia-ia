@@ -1,6 +1,7 @@
 "use client";
 
 import TemplateRenderer, { TemaPickerCompact } from "@/components/TemplateRenderer";
+import DocumentVersionPanel from "@/components/DocumentVersionPanel";
 import type { TemaDocumento } from "@/lib/pdf-themes";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useRef, useState } from "react";
@@ -2137,6 +2138,7 @@ export default function BriefingPage() {
       )}
 
       <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} temaDocumento={temaDocumento} onTemaChange={setTemaDocumento} />
+      <DocumentVersionPanel projetoId={projetoId} tipo="briefing" pendingText={text} isStreaming={isLoading} />
     </div>
   );
 }

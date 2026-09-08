@@ -8,6 +8,7 @@ import DocumentForm, {
   Input,
 } from "@/components/DocumentForm";
 import TemplateRenderer from "@/components/TemplateRenderer";
+import DocumentVersionPanel from "@/components/DocumentVersionPanel";
 import { useGenerate } from "@/lib/useGenerate";
 import { useEffect, useState } from "react";
 import {
@@ -280,6 +281,7 @@ export default function SpecsPage() {
       </DocumentForm>
 
       <TemplateRenderer text={text} isStreaming={isLoading} visible={visible} />
+      <DocumentVersionPanel projetoId={projetoId} tipo="specs" pendingText={text} isStreaming={isLoading} />
     </div>
   );
 }
